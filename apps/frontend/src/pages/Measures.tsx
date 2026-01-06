@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, X, Loader2, Edit2 } from 'lucide-react';
-import { getMeasures, createMeasure, deleteMeasure, Measure, User } from '../services/api';
+import { getMeasures, createMeasure, updateMeasure, deleteMeasure, Measure, User } from '../services/api';
 import { ICON_MAP, COLORS, getColor } from '../utils/theme';
 
 interface MeasuresProps {

@@ -187,7 +187,7 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
                                             <select
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-yellow-500/50 transition-colors"
                                                 value={timeframe}
-                                                onChange={e => setTimeframe(e.target.value)}
+                                                onChange={e => setTimeframe(e.target.value as 'DAILY' | 'WEEKLY' | 'MONTHLY')}
                                             >
                                                 <option value="DAILY">Daily</option>
                                                 <option value="WEEKLY">Weekly</option>
@@ -198,7 +198,7 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
                                             <select
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-yellow-500/50 transition-colors"
                                                 value={type}
-                                                onChange={e => setType(e.target.value)}
+                                                onChange={e => setType(e.target.value as 'TOTAL' | 'COUNT')}
                                             >
                                                 <option value="TOTAL">Total Amount</option>
                                                 <option value="COUNT">Frequency</option>
