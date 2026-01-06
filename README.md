@@ -39,3 +39,37 @@ A full-stack application for tracking personal goals, measures, and managing a r
 
 ## License
 [MIT](LICENSE)
+
+## Deployment
+
+### Production Setup (Ubuntu/Linux)
+
+This project is configured to use Docker Compose for production deployment, pulling images from GitHub Container Registry (GHCR).
+
+1. **Authentication**
+   Create a Personal Access Token (PAT) on GitHub with `read:packages` scope.
+   On your Ubuntu machine, log in to the registry:
+   ```bash
+   echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
+   ```
+
+2. **Configuration**
+   Copy `.env.example` to `.env` and configure your preferences:
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
+   Update `GITHUB_REPOSITORY_OWNER` and `GITHUB_REPOSITORY_NAME` to match your repo.
+   Set your desired `WEB_PORT` and `API_PORT` if the defaults clash with other services.
+
+3. **Deploy**
+   Run the production compose file:
+   ```bash
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+   To pull the latest images and restart:
+   ```bash
+   docker-compose -f docker-compose.prod.yml pull
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
