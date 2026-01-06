@@ -74,7 +74,7 @@ export interface Transaction {
     id: string;
     userId: string;
     amount: number;
-    type: 'REWARD' | 'CASHOUT' | 'BONUS' | 'MANUAL_CREDIT' | 'MANUAL_DEBIT';
+    type: 'REWARD' | 'CASHOUT' | 'BONUS' | 'MANUAL_CREDIT' | 'MANUAL_DEBIT' | 'CREDIT' | 'DEBIT';
     title: string;
     description?: string;
     notes?: string;

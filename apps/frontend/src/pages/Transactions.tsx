@@ -95,7 +95,7 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                 });
             } else {
                 await createTransaction({
-                    type: txType === 'CREDIT' ? 'MANUAL_CREDIT' : 'MANUAL_DEBIT',
+                    type: txType === 'CREDIT' ? 'CREDIT' : 'DEBIT',
                     amount: parseFloat(txAmount),
                     title: txTitle,
                     description: txDesc
