@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
-import { LayoutDashboard, Target, History, LogOut, ChevronRight, Loader2, Ruler, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Target, History, LogOut, ChevronRight, Loader2, Ruler, DollarSign, Settings as SettingsIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import Dashboard from './pages/Dashboard';
@@ -8,6 +8,7 @@ import Measures from './pages/Measures';
 import Goals from './pages/Goals';
 import LogEntries from './pages/LogEntries';
 import Transactions from './pages/Transactions';
+import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import { AuthProvider, useAuth } from './AuthContext';
@@ -73,6 +74,7 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
                     <SidebarLink to="/measures" icon={Ruler} label="Measures" />
                     <SidebarLink to="/goals" icon={Target} label="Goals" />
                     <SidebarLink to="/transactions" icon={DollarSign} label="Transactions" />
+                    <SidebarLink to="/settings" icon={SettingsIcon} label="Settings" />
                 </nav>
 
                 <div className="mt-auto flex flex-col gap-4">
@@ -137,6 +139,11 @@ function AppRoutes() {
             <Route path="/transactions" element={
                 <ProtectedLayout>
                     {user && <Transactions user={user} onUpdate={refreshUser} />}
+                </ProtectedLayout>
+            } />
+            <Route path="/settings" element={
+                <ProtectedLayout>
+                    <Settings />
                 </ProtectedLayout>
             } />
         </Routes>

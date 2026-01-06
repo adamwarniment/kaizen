@@ -16,8 +16,19 @@ model User {
   measures     Measure[]
   entries      Entry[]
   transactions Transaction[]
+  apiTokens    ApiToken[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+}
+
+model ApiToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  tokenHash String   @unique
+  lastUsedAt DateTime?
+  createdAt DateTime @default(now())
 }
 
 model Measure {

@@ -92,4 +92,8 @@ export const createTransaction = (data: Partial<Transaction>) => api.post('/tran
 export const updateTransaction = (id: string, data: Partial<Transaction>) => api.put(`/transactions/${id}`, data);
 export const deleteTransaction = (id: string) => api.delete(`/transactions/${id}`);
 
+export const getApiTokens = () => api.get<ApiToken[]>('/api-tokens');
+export const createApiToken = (data: { name: string }) => api.post<{ token: string, name: string, id: string }>('/api-tokens', data);
+export const deleteApiToken = (id: string) => api.delete(`/api-tokens/${id}`);
+
 export default api;

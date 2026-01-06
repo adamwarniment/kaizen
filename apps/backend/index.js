@@ -74,17 +74,83 @@ app.post('/auth/login', async (req, res) => {
 });
 
 // --- Auth Middleware ---
-const authenticateToken = (req, res, next) => {
+const crypto = require('crypto');
+
+// --- Auth Middleware ---
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.sendStatus(401);
 
+  // Check for API Token (starts with kaizen_)
+  if (token.startsWith('kaizen_')) {
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    const apiToken = await prisma.apiToken.findUnique({ where: { tokenHash: hash } });
+
+    if (apiToken) {
+      req.user = { userId: apiToken.userId };
+      // Update last used
+      await prisma.apiToken.update({
+        where: { id: apiToken.id },
+        data: { lastUsedAt: new Date() }
+      });
+      return next();
+    }
+  }
+
+  // Fallback to JWT
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
     req.user = user;
     next();
   });
 };
+
+// --- API Token Routes ---
+app.get('/api-tokens', authenticateToken, async (req, res) => {
+  const tokens = await prisma.apiToken.findMany({
+    where: { userId: req.user.userId },
+    orderBy: { createdAt: 'desc' }
+  });
+  // Don't return the hash
+  res.json(tokens.map(t => ({ id: t.id, name: t.name, createdAt: t.createdAt, lastUsedAt: t.lastUsedAt })));
+});
+
+app.post('/api-tokens', authenticateToken, async (req, res) => {
+  const { name } = req.body;
+  const userId = req.user.userId;
+
+  const rawToken = 'kaizen_' + crypto.randomBytes(32).toString('hex');
+  const hash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+  try {
+    const token = await prisma.apiToken.create({
+      data: {
+        userId,
+        name: name || 'API Token',
+        tokenHash: hash
+      }
+    });
+    // Return raw token ONLY ONCE
+    res.json({ token: rawToken, name: token.name, id: token.id });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to create token' });
+  }
+});
+
+app.delete('/api-tokens/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.userId;
+  try {
+    const token = await prisma.apiToken.findFirst({ where: { id, userId } });
+    if (!token) return res.sendStatus(404);
+    await prisma.apiToken.delete({ where: { id } });
+    res.sendStatus(200);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to delete token' });
+  }
+});
 
 // --- User Routes ---
 app.get('/users/me', authenticateToken, async (req, res) => {
@@ -302,130 +368,196 @@ app.post('/entries', authenticateToken, async (req, res) => {
     });
 
     // 2. Evaluate Goals
-    const measure = await prisma.measure.findUnique({
-      where: { id: measureId },
-      include: { goals: true }
-    });
-
-    console.log(`Evaluating goals for measure ${measure.name} on ${entryDate.toISOString()}`);
-
-    let totalReward = 0;
-    const rewardsEarned = [];
-
-    // Helper to check and award
-    const processGoal = async (goal, currentAmount, periodId) => {
-      // Check if goal conditions met
-      if (currentAmount >= goal.targetValue) {
-        // Check if already rewarded for this period
-        const existingTx = await prisma.transaction.findFirst({
-          where: {
-            userId,
-            goalId: goal.id,
-            periodId
-          }
-        });
-
-        if (!existingTx) {
-          console.log(`Goal met! ${goal.timeframe} ${goal.type}: ${currentAmount}/${goal.targetValue}. Rewarding $${goal.rewardAmount}`);
-
-          await prisma.$transaction([
-            prisma.user.update({
-              where: { id: userId },
-              data: { balance: { increment: goal.rewardAmount } }
-            }),
-            prisma.transaction.create({
-              data: {
-                userId,
-                amount: goal.rewardAmount,
-                type: 'REWARD',
-                goalId: goal.id,
-                periodId,
-                title: 'Goal Met',
-                notes: `${measure.name} (${goal.timeframe} ${goal.type})`
-              }
-            })
-          ]);
-
-          totalReward += goal.rewardAmount;
-          rewardsEarned.push({
-            goal: `${goal.timeframe} ${goal.type}`,
-            amount: goal.rewardAmount
-          });
-        }
-      }
-    };
-
-    // Iterate through all goals for this measure
-    for (const goal of measure.goals) {
-      if (goal.timeframe === 'DAILY') {
-        const periodId = entryDate.toISOString().split('T')[0]; // "YYYY-MM-DD"
-
-        // Fetch daily stats
-        const dayStart = new Date(periodId);
-        const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
-
-        const entries = await prisma.entry.findMany({
-          where: {
-            measureId,
-            userId,
-            date: { gte: dayStart, lt: dayEnd }
-          }
-        });
-
-        // Calculate amount based on type
-        // TOTAL = Sum of all values
-        // COUNT = Count of entries (optionally filtered by minPerEntry)
-        let amount = 0;
-        if (goal.type === 'TOTAL') {
-          amount = entries.reduce((sum, e) => sum + e.value, 0);
-        } else if (goal.type === 'COUNT') {
-          amount = entries.filter(e => !goal.minPerEntry || e.value >= goal.minPerEntry).length;
-        }
-
-        await processGoal(goal, amount, periodId);
-
-      } else if (goal.timeframe === 'WEEKLY') {
-        const periodId = getWeekKey(entryDate);
-
-        // Fetch weekly stats
-        // Naive week calculation: Find relative to current date entry. 
-        // Better: Query DB for week range. 
-        // Important: week starts Monday? Let's assume standard ISO week logic or simplify for now.
-        // Simplification: We already have getWeekKey. Let's filter entries by date range in JS or DB.
-
-        // Calculate start/end of current week
-        const d = new Date(entryDate);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
-        const weekStart = new Date(d.setDate(diff)); weekStart.setHours(0, 0, 0, 0);
-        const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 7);
-
-        const entries = await prisma.entry.findMany({
-          where: {
-            measureId,
-            userId,
-            date: { gte: weekStart, lt: weekEnd }
-          }
-        });
-
-        let amount = 0;
-        if (goal.type === 'TOTAL') {
-          amount = entries.reduce((sum, e) => sum + e.value, 0);
-        } else if (goal.type === 'COUNT') {
-          amount = entries.filter(e => !goal.minPerEntry || e.value >= goal.minPerEntry).length;
-        }
-
-        await processGoal(goal, amount, periodId);
-      }
-    }
-
-    res.json({ entry, totalReward, rewardsEarned });
+    const results = await evaluateGoals(userId, measureId, entryDate);
+    res.json({ entry, ...results });
 
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Failed to create entry' });
   }
 });
+
+
+
+app.post('/entries/batch', authenticateToken, async (req, res) => {
+  const entriesData = req.body; // Expecting array of { measureId?, measureName?, value, date }
+  const userId = req.user.userId;
+
+  if (!Array.isArray(entriesData)) {
+    return res.status(400).json({ error: 'Payload must be an array' });
+  }
+
+  const results = [];
+
+  try {
+    for (const data of entriesData) {
+      const { measureId, measureName, value, date } = data;
+      let targetMeasureId = measureId;
+
+      // Resolve Measure ID if only name is provided
+      if (!targetMeasureId && measureName) {
+        const measure = await prisma.measure.findFirst({
+          where: { userId, name: measureName }
+        });
+        if (measure) {
+          targetMeasureId = measure.id;
+        } else {
+          results.push({ success: false, error: `Measure '${measureName}' not found`, data });
+          continue;
+        }
+      }
+
+      if (!targetMeasureId) {
+        results.push({ success: false, error: 'Missing measureId or measureName', data });
+        continue;
+      }
+
+      const entryDate = new Date(date);
+      try {
+        const entry = await prisma.entry.create({
+          data: {
+            userId,
+            measureId: targetMeasureId,
+            value: parseFloat(value),
+            date: entryDate
+          }
+        });
+
+        // Evaluate goals
+        const rewardResults = await evaluateGoals(userId, targetMeasureId, entryDate);
+        results.push({ success: true, entry, ...rewardResults });
+
+      } catch (err) {
+        console.error(err);
+        results.push({ success: false, error: 'Failed to create entry', data });
+      }
+    }
+
+    res.json({ results });
+
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Batch processing failed' });
+  }
+});
+
+// Helper for Goal Evaluation
+const evaluateGoals = async (userId, measureId, entryDate) => {
+  const measure = await prisma.measure.findUnique({
+    where: { id: measureId },
+    include: { goals: true }
+  });
+
+  if (!measure) return { totalReward: 0, rewardsEarned: [] };
+
+  console.log(`Evaluating goals for measure ${measure.name} on ${entryDate.toISOString()}`);
+
+  let totalReward = 0;
+  const rewardsEarned = [];
+
+  // Helper to check and award
+  const processGoal = async (goal, currentAmount, periodId) => {
+    // Check if goal conditions met
+    if (currentAmount >= goal.targetValue) {
+      // Check if already rewarded for this period
+      const existingTx = await prisma.transaction.findFirst({
+        where: {
+          userId,
+          goalId: goal.id,
+          periodId
+        }
+      });
+
+      if (!existingTx) {
+        console.log(`Goal met! ${goal.timeframe} ${goal.type}: ${currentAmount}/${goal.targetValue}. Rewarding $${goal.rewardAmount}`);
+
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: userId },
+            data: { balance: { increment: goal.rewardAmount } }
+          }),
+          prisma.transaction.create({
+            data: {
+              userId,
+              amount: goal.rewardAmount,
+              type: 'REWARD',
+              goalId: goal.id,
+              periodId,
+              title: 'Goal Met',
+              notes: `${measure.name} (${goal.timeframe} ${goal.type})`
+            }
+          })
+        ]);
+
+        totalReward += goal.rewardAmount;
+        rewardsEarned.push({
+          goal: `${goal.timeframe} ${goal.type}`,
+          amount: goal.rewardAmount
+        });
+      }
+    }
+  };
+
+  // Iterate through all goals for this measure
+  for (const goal of measure.goals) {
+    if (goal.timeframe === 'DAILY') {
+      const periodId = entryDate.toISOString().split('T')[0]; // "YYYY-MM-DD"
+
+      // Fetch daily stats
+      const dayStart = new Date(periodId);
+      const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+
+      const entries = await prisma.entry.findMany({
+        where: {
+          measureId,
+          userId,
+          date: { gte: dayStart, lt: dayEnd }
+        }
+      });
+
+      // Calculate amount based on type
+      let amount = 0;
+      if (goal.type === 'TOTAL') {
+        amount = entries.reduce((sum, e) => sum + e.value, 0);
+      } else if (goal.type === 'COUNT') {
+        amount = entries.filter(e => !goal.minPerEntry || e.value >= goal.minPerEntry).length;
+      }
+
+      await processGoal(goal, amount, periodId);
+
+    } else if (goal.timeframe === 'WEEKLY') {
+      const periodId = getWeekKey(entryDate);
+
+      // Fetch weekly stats
+      const d = new Date(entryDate);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+      const weekStart = new Date(d.setDate(diff)); weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 7);
+
+      const entries = await prisma.entry.findMany({
+        where: {
+          measureId,
+          userId,
+          date: { gte: weekStart, lt: weekEnd }
+        }
+      });
+
+      let amount = 0;
+      if (goal.type === 'TOTAL') {
+        amount = entries.reduce((sum, e) => sum + e.value, 0);
+      } else if (goal.type === 'COUNT') {
+        amount = entries.filter(e => !goal.minPerEntry || e.value >= goal.minPerEntry).length;
+      }
+
+      await processGoal(goal, amount, periodId);
+    }
+  }
+
+  return { totalReward, rewardsEarned };
+};
+
+
 
 // --- Transaction Routes ---
 app.get('/transactions', authenticateToken, async (req, res) => {
