@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { History, ArrowUpRight, ArrowDownLeft, Wallet, Loader2, Plus, X, Edit2, Trash2 } from 'lucide-react';
 import { getHistory, cashout, createTransaction, updateTransaction, deleteTransaction, Transaction, User } from '../services/api';
+import CashFlowChart from '../components/CashFlowChart';
 
 interface TransactionsProps {
     user: User;
@@ -162,6 +163,8 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                     <p className="text-3xl font-bold text-red-400">-${totalSpent.toFixed(2)}</p>
                 </div>
             </div>
+
+            <CashFlowChart transactions={history} />
 
             {/* Cashout Section (Legacy/Quick) */}
             <div className="glass p-6 rounded-2xl border border-white/5 flex items-center gap-4">

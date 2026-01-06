@@ -153,6 +153,26 @@ app.delete('/api-tokens/:id', authenticateToken, async (req, res) => {
 });
 
 // --- User Routes ---
+app.put('/users/me', authenticateToken, async (req, res) => {
+  const { name, weekStart } = req.body;
+  const userId = req.user.userId;
+
+  try {
+    const data = {};
+    if (name) data.name = name;
+    if (weekStart) data.weekStart = weekStart;
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data
+    });
+    res.json(user);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
 app.get('/users/me', authenticateToken, async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.userId },
@@ -316,12 +336,46 @@ app.delete('/goals/:id', authenticateToken, async (req, res) => {
 });
 
 // --- Entry Routes & Reward Evaluation ---
-const getWeekKey = (date) => {
+// Helper for Goal Evaluation
+const getWeekKey = (date, weekStart = 'SUNDAY') => {
   // Returns "YYYY-Www" format (e.g. 2023-W43)
   const d = new Date(date);
-  const onejan = new Date(d.getFullYear(), 0, 1);
-  const week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
-  return `${d.getFullYear()}-W${week}`;
+  // Adjust for Monday start if needed
+  // Standard ISO week starts on Monday. "onejan" logic below typically assumes Sunday=0?
+  // Let's rely on standard logic but shift the date if Monday start
+  // If weekStart is MONDAY, and today is Sunday (0), it belongs to previous week?
+  // Actually simplest way is to find the "week start date" for the given preference, and use that string.
+  // BUT the periodId needs to be consistent.
+
+  // Alternative: Use ISO week for Monday, US week for Sunday.
+  // Let's implement manually: find start of week, use MM-DD of start of week as key?
+  // "YYYY-MM-DD-Start"
+
+  const day = d.getDay(); // 0=Sun, 1=Mon
+  let diff = d.getDate() - day + (day === 0 ? -6 : 1); // This is for Monday start
+
+  if (weekStart === 'SUNDAY') {
+    // Sunday start: 0=Sun. 
+    // diff = d.getDate() - day; // go back 'day' days.
+    const startDiff = d.getDate() - day;
+    const weekStartDate = new Date(d.setDate(startDiff));
+    return `WEEK-${formatDate(weekStartDate)}`;
+  } else {
+    // Monday Start
+    // If day is 0 (Sun), we go back 6 days to Mon.
+    // If day is 1 (Mon), we go back 0 days.
+    // diff logic above: d.getDate() - day + (day == 0 ? -6 : 1);
+    // e.g. Sun(0): -0 + -6 = -6. Correct.
+    // e.g. Mon(1): -1 + 1 = 0. Correct.
+    // e.g. Tue(2): -2 + 1 = -1. Correct.
+    const startDiff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const weekStartDate = new Date(d.setDate(startDiff));
+    return `WEEK-${formatDate(weekStartDate)}`;
+  }
+};
+
+const formatDate = (d) => {
+  return d.toISOString().split('T')[0];
 };
 
 app.get('/entries', authenticateToken, async (req, res) => {
@@ -526,13 +580,27 @@ const evaluateGoals = async (userId, measureId, entryDate) => {
       await processGoal(goal, amount, periodId);
 
     } else if (goal.timeframe === 'WEEKLY') {
-      const periodId = getWeekKey(entryDate);
+      // Need user settings to know week start
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      const weekStartSetting = user.weekStart || 'SUNDAY';
+
+      const periodId = getWeekKey(entryDate, weekStartSetting);
 
       // Fetch weekly stats
       const d = new Date(entryDate);
       const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
-      const weekStart = new Date(d.setDate(diff)); weekStart.setHours(0, 0, 0, 0);
+      let weekStart;
+
+      if (weekStartSetting === 'SUNDAY') {
+        // Sunday start
+        const diff = d.getDate() - day;
+        weekStart = new Date(d.setDate(diff)); weekStart.setHours(0, 0, 0, 0);
+      } else {
+        // Monday start
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        weekStart = new Date(d.setDate(diff)); weekStart.setHours(0, 0, 0, 0);
+      }
+
       const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 7);
 
       const entries = await prisma.entry.findMany({

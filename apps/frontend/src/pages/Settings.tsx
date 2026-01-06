@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Key, Copy, Plus, Trash2, Check, Loader2, AlertCircle } from 'lucide-react';
-import { getApiTokens, createApiToken, deleteApiToken, ApiToken } from '../services/api';
+import { getApiTokens, createApiToken, deleteApiToken, ApiToken, updateUser, User } from '../services/api';
+import { Key, Copy, Plus, Trash2, Check, Loader2, AlertCircle, Calendar as CalendarIcon } from 'lucide-react';
 
-const Settings: React.FC = () => {
+interface SettingsProps {
+    user: User;
+    onUpdate: () => void;
+}
+
+const Settings: React.FC<SettingsProps> = ({ user, onUpdate }) => {
     const [tokens, setTokens] = useState<ApiToken[]>([]);
     const [loading, setLoading] = useState(true);
     const [newTokenName, setNewTokenName] = useState('');
@@ -37,6 +42,19 @@ const Settings: React.FC = () => {
         }
     };
 
+    const handleUpdateWeekStart = async (day: 'SUNDAY' | 'MONDAY') => {
+        try {
+            const res = await updateUser({ weekStart: day });
+            onUpdate(); // Refresh parent user state
+            // Optimistic update or just wait for re-fetch? onUpdate should trigger fetching in App.tsx? 
+            // Actually Dashboard/App fetches user. Settings receives user as prop? 
+            // Wait, Settings currently doesn't receive User prop. I need to update Pros.
+        } catch (e) {
+            console.error(e);
+            alert("Failed to update setting");
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm("Revoke this token? Applications using it will stop working.")) return;
         try {
@@ -60,7 +78,43 @@ const Settings: React.FC = () => {
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">API Settings</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Settings</h1>
+
+            {/* Application Settings */}
+            <div className="glass p-8 rounded-2xl border border-white/5 space-y-6">
+                <div className="flex items-start gap-4">
+                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400">
+                        <CalendarIcon size={32} />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-200">Application Preferences</h2>
+                        <p className="text-slate-400 mt-1">
+                            Customize your global application experience.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/5">
+                    <div>
+                        <label className="text-base font-bold text-slate-200 block">Week Starts On</label>
+                        <p className="text-xs text-slate-500 mt-1">Determines how weekly goals and calendar weeks are displayed.</p>
+                    </div>
+                    <div className="flex bg-black/40 p-1 rounded-lg border border-white/10">
+                        <button
+                            onClick={() => handleUpdateWeekStart('SUNDAY')}
+                            className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${user.weekStart === 'SUNDAY' || !user.weekStart ? 'bg-blue-500 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                            Sunday
+                        </button>
+                        <button
+                            onClick={() => handleUpdateWeekStart('MONDAY')}
+                            className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${user.weekStart === 'MONDAY' ? 'bg-blue-500 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                            Monday
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <div className="glass p-8 rounded-2xl border border-white/5 space-y-6">
                 <div className="flex items-start gap-4">

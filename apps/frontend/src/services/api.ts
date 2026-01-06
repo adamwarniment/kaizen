@@ -10,7 +10,17 @@ api.interceptors.request.use((config) => {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
+    return config;
 });
+
+export interface ApiToken {
+    id: string;
+    userId: string;
+    name: string;
+    tokenHash?: string;
+    lastUsedAt?: string;
+    createdAt: string;
+}
 
 // Type Definitions
 export interface User {
@@ -18,8 +28,11 @@ export interface User {
     name: string;
     email: string;
     balance: number;
+    weekStart?: 'SUNDAY' | 'MONDAY';
     createdAt: string;
 }
+
+export const updateUser = (data: Partial<User>) => api.put<User>('/users/me', data);
 
 export interface Measure {
     id: string;

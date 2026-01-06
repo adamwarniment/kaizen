@@ -97,7 +97,8 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
 
     const renderCalendarDays = () => {
         const totalDays = daysInMonth(currentMonth);
-        const startDay = startDayOfMonth(currentMonth); // 0 = Sunday
+        const weekStartDay = user.weekStart === 'MONDAY' ? 1 : 0;
+        const startDay = (startDayOfMonth(currentMonth) - weekStartDay + 7) % 7;
         const days = [];
 
         // Empty slots for days before start of month
@@ -212,7 +213,10 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
                 </div>
 
                 <div className="grid grid-cols-7 gap-px bg-white/10 border border-white/10 rounded-xl overflow-hidden flex-grow">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    {(user.weekStart === 'MONDAY'
+                        ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                        : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                    ).map(day => (
                         <div key={day} className="h-10 bg-white/5 flex items-center justify-center text-xs font-bold uppercase text-slate-500 tracking-wider">
                             {day}
                         </div>

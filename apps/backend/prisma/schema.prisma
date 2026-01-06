@@ -13,6 +13,7 @@ model User {
   name         String?
   password     String?
   balance      Float         @default(0)
+  weekStart    String        @default("SUNDAY") // "SUNDAY" or "MONDAY"
   measures     Measure[]
   entries      Entry[]
   transactions Transaction[]
