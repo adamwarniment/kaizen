@@ -22,7 +22,7 @@ export const calculateStreak = (measure: Measure, entries: Entry[]): number => {
     // Group entries by day
     const entriesByDay: Record<string, number> = {};
     sortedEntries.forEach(e => {
-        const dayStr = format(new Date(e.date), 'yyyy-MM-dd');
+        const dayStr = e.date.substring(0, 10);
         entriesByDay[dayStr] = (entriesByDay[dayStr] || 0) + e.value;
     });
 
@@ -43,7 +43,7 @@ export const calculateStreak = (measure: Measure, entries: Entry[]): number => {
     // We need to replicate that.
 
     const checkGoalMet = (dateStr: string) => {
-        const daysEntries = sortedEntries.filter(e => format(new Date(e.date), 'yyyy-MM-dd') === dateStr);
+        const daysEntries = sortedEntries.filter(e => e.date.substring(0, 10) === dateStr);
         let achieved = 0;
 
         if (dailyGoal.type === 'TOTAL') {
@@ -94,27 +94,31 @@ export const calculateStreak = (measure: Measure, entries: Entry[]): number => {
 
 export const getDailyProgress = (measure: Measure, entries: Entry[], date: Date) => {
     const dailyGoal = measure.goals?.find(g => g.timeframe === 'DAILY');
-    if (!dailyGoal) return { progress: 0, met: false, value: 0, target: 0 };
+
+    // Default to TOTAL behavior if no goal, or use goal type
+    const calculationType = dailyGoal?.type || 'TOTAL';
+    const target = dailyGoal?.targetValue || 0;
 
     const dateStr = format(date, 'yyyy-MM-dd');
     const daysEntries = entries.filter(e =>
         e.measureId === measure.id &&
-        format(new Date(e.date), 'yyyy-MM-dd') === dateStr
+        e.date.substring(0, 10) === dateStr
     );
 
     let value = 0;
-    if (dailyGoal.type === 'TOTAL') {
+    if (calculationType === 'TOTAL') {
         value = daysEntries.reduce((sum, e) => sum + e.value, 0);
     } else {
-        value = daysEntries.filter(e => !dailyGoal.minPerEntry || e.value >= dailyGoal.minPerEntry).length;
+        value = daysEntries.filter(e => !dailyGoal?.minPerEntry || e.value >= dailyGoal.minPerEntry).length;
     }
 
-    const progress = Math.min(100, (value / dailyGoal.targetValue) * 100);
+    const progress = target > 0 ? Math.min(100, (value / target) * 100) : 0;
+
     return {
         progress,
-        met: value >= dailyGoal.targetValue,
+        met: target > 0 && value >= target,
         value,
-        target: dailyGoal.targetValue
+        target
     };
 };
 
@@ -131,7 +135,7 @@ export const getTrendData = (measure: Measure, entries: Entry[], days = 14) => {
 
         const daysEntries = entries.filter(e =>
             e.measureId === measure.id &&
-            format(new Date(e.date), 'yyyy-MM-dd') === dateStr
+            e.date.substring(0, 10) === dateStr
         );
 
         let value = 0;

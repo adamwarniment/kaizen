@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Trash2, Edit2, Save, X, Check } from 'lucide-react';
 import { ICON_MAP, getColor } from '../utils/theme';
@@ -132,9 +133,11 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
 
     // Filter entries for the selected week
     const weeklyEntries = entries.filter(e => {
-        const d = new Date(e.date);
-        return d >= selectedWeekRange.start && d <= selectedWeekRange.end;
-    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const entryDateStr = e.date.substring(0, 10);
+        const startStr = format(selectedWeekRange.start, 'yyyy-MM-dd');
+        const endStr = format(selectedWeekRange.end, 'yyyy-MM-dd');
+        return entryDateStr >= startStr && entryDateStr <= endStr;
+    }).sort((a, b) => a.date.localeCompare(b.date));
 
     // Group by Date for display
     const groupedEntries: { [key: string]: Entry[] } = {};
@@ -174,7 +177,7 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
         for (let day = 1; day <= totalDays; day++) {
             const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const isToday = dateStr === new Date().toISOString().split('T')[0];
-            const dayEntries = entries.filter(e => e.date.startsWith(dateStr));
+            const dayEntries = entries.filter(e => e.date.substring(0, 10) === dateStr);
             const activityCount = dayEntries.length;
 
             const isSelectedWeek = isDateInRange(dateStr, selectedWeekRange);

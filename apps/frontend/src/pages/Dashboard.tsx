@@ -115,35 +115,50 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
                                         {/* Daily Progress Bars */}
                                         <div className="grid grid-cols-2 gap-1 mt-1">
                                             {measures.map(m => {
+                                                // Filter out if a specific measure is selected and this isn't it
+                                                if (selectedMeasureId && m.id !== selectedMeasureId) return null;
+
                                                 const stats = getDailyProgress(m, entries, day);
+
+                                                // Filter out zero values globally
+                                                if (stats.value === 0) return null;
+
                                                 const colorName = m.color || 'emerald';
                                                 const theme = getColor(colorName);
                                                 const ItemIcon = ICON_MAP[m.icon || 'Target'] || ICON_MAP['Target'];
 
-                                                const isSelectedMeasure = selectedMeasureId === m.id;
-                                                const isFilteredAndNotSelected = selectedMeasureId && !isSelectedMeasure;
-                                                const isSelectedAndZero = isSelectedMeasure && stats.value === 0;
-
                                                 return (
                                                     <div
                                                         key={m.id}
-                                                        className={`group/item relative transition-all duration-300 
-                                                            ${isFilteredAndNotSelected ? 'opacity-10 grayscale' : ''} 
-                                                            ${isSelectedAndZero ? 'opacity-20 grayscale' : ''}
-                                                        `}
+                                                        className="group/item relative transition-all duration-300"
                                                     >
                                                         <div className="flex items-center gap-1.5 opacity-80 group-hover/item:opacity-100 transition-opacity">
                                                             <div className={theme.text}>
                                                                 <ItemIcon size={10} />
                                                             </div>
-                                                            <div className="h-1 flex-grow bg-zinc-800 rounded-full overflow-hidden">
-                                                                {stats.target > 0 && (
+                                                            {stats.target > 0 ? (
+                                                                <div className="h-1 flex-grow bg-zinc-800 rounded-full overflow-hidden relative">
                                                                     <div
-                                                                        className={`h-full ${stats.met ? theme.bg : theme.bg} transition-all duration-500 ${stats.met ? 'brightness-125' : 'opacity-70'}`}
+                                                                        className={`h-full ${theme.bg} transition-all duration-500 brightness-125`}
                                                                         style={{ width: `${stats.progress}%` }}
                                                                     />
-                                                                )}
-                                                            </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div
+                                                                    className="flex-grow flex items-center"
+                                                                    title={`${stats.value} ${m.unit}`}
+                                                                >
+                                                                    <span
+                                                                        className={`text-[9px] font-bold px-1 rounded-full flex items-center justify-center leading-none h-[10px] w-full`}
+                                                                        style={{
+                                                                            backgroundColor: `${theme.hex}33`, // ~20% opacity
+                                                                            color: theme.hex
+                                                                        }}
+                                                                    >
+                                                                        {stats.value}
+                                                                    </span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );
