@@ -1,0 +1,73 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  name         String?
+  password     String?
+  balance      Float         @default(0)
+  measures     Measure[]
+  entries      Entry[]
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Measure {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  name         String
+  unit         String   // e.g., "minutes", "servings", "ml"
+  icon         String   @default("Target")
+  color        String   @default("emerald")
+  goals        Goal[]
+  entries      Entry[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Goal {
+  id          String   @id @default(uuid())
+  measureId   String
+  measure     Measure  @relation(fields: [measureId], references: [id], onDelete: Cascade)
+  timeframe   String   // "DAILY", "WEEKLY"
+  type        String   // "TOTAL", "COUNT"
+  targetValue Float
+  minPerEntry Float?   // For COUNT goals: an entry must be >= this to count
+  rewardAmount Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Entry {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  measureId String
+  measure   Measure  @relation(fields: [measureId], references: [id], onDelete: Cascade)
+  value     Float
+  date      DateTime // YYYY-MM-DDT00:00:00.000Z
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Float
+  type      String   // "REWARD", "CASHOUT", "BONUS"
+  title     String   @default("Transaction")
+  notes     String?
+  goalId    String?  // Optional: link reward to specific goal
+  periodId  String?  // Optional: e.g. "2023-10-27" or "2023-W43" to dedup rewards
+  createdAt DateTime @default(now())
+}

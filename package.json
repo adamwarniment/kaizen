@@ -1,0 +1,15 @@
+{
+  "name": "kaizen-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/backend & npm run dev -w apps/frontend",
+    "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
+    "start:backend": "npm run start -w apps/backend",
+    "db:migrate": "npm run prisma:migrate -w apps/backend",
+    "docker:up": "docker-compose up --build",
+    "docker:down": "docker-compose down"
+  }
+}
