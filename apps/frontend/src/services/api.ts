@@ -98,6 +98,8 @@ export const deleteGoal = (id: string) => api.delete(`/goals/${id}`);
 
 export const getEntries = (start?: string, end?: string) => api.get<Entry[]>('/entries', { params: { start, end } });
 export const createEntry = (data: Partial<Entry>) => api.post<Entry>('/entries', data);
+export const updateEntry = (id: string, data: Partial<Entry>) => api.put<Entry>(`/entries/${id}`, data);
+export const deleteEntry = (id: string) => api.delete(`/entries/${id}`);
 
 export const getHistory = () => api.get<Transaction[]>('/transactions');
 export const cashout = (data: { amount: number }) => api.post<{ message: string, newBalance: number }>('/transactions/cashout', data);

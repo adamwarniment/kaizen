@@ -431,6 +431,51 @@ app.post('/entries', authenticateToken, async (req, res) => {
   }
 });
 
+app.put('/entries/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { value, date } = req.body;
+  const userId = req.user.userId;
+
+  try {
+    const entry = await prisma.entry.findFirst({ where: { id, userId } });
+    if (!entry) return res.sendStatus(404);
+
+    const updatedEntry = await prisma.entry.update({
+      where: { id },
+      data: {
+        value: value !== undefined ? parseFloat(value) : undefined,
+        date: date ? new Date(date) : undefined
+      }
+    });
+
+    // Re-evaluate goals if value or date changed
+    // We pass the new date (or old if not changed) and measureId
+    const entryDate = date ? new Date(date) : entry.date;
+    const results = await evaluateGoals(userId, entry.measureId, entryDate);
+
+    res.json({ entry: updatedEntry, ...results });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to update entry' });
+  }
+});
+
+app.delete('/entries/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.userId;
+
+  try {
+    const entry = await prisma.entry.findFirst({ where: { id, userId } });
+    if (!entry) return res.sendStatus(404);
+
+    await prisma.entry.delete({ where: { id } });
+    res.sendStatus(200);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to delete entry' });
+  }
+});
+
 
 
 app.post('/entries/batch', authenticateToken, async (req, res) => {
