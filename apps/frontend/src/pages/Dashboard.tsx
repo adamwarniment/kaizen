@@ -5,7 +5,7 @@ import { getMeasures, getUser, Measure, User, Entry, getEntries } from '../servi
 import { ICON_MAP, getColor } from '../utils/theme';
 import { Link } from 'react-router-dom';
 import { LineChart, Line, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths, isToday, addWeeks, subWeeks, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths, isToday, addWeeks, subWeeks, parseISO, getDay, getDaysInMonth, isFuture } from 'date-fns';
 import { calculateStreak, getDailyProgress, getTrendData } from '../utils/stats';
 
 interface DashboardProps {
@@ -128,141 +128,126 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
                         <p className="text-zinc-400 mt-1 text-sm">Track your weekly progress</p>
                     </div>
 
-                    {/* Week Controls */}
+                    {/* Month Controls (Replaces Week Controls) */}
                     <div className="flex items-center gap-2 bg-zinc-900/50 p-1.5 rounded-xl border border-white/5 self-start">
-                        <button onClick={prevWeek} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors">
-                            <ChevronLeft size={18} />
+                        <button onClick={prevMonth} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors">
+                            <ChevronLeft size={16} />
                         </button>
 
-                        <div className="flex items-center gap-2 px-2 relative min-w-[140px] justify-center group cursor-pointer">
-                            <CalendarIcon size={16} className="text-red-500" />
-                            <span className="text-sm font-bold text-zinc-200 tabular-nums">
-                                {format(currentWeekStart, 'MMM d')} - {format(weekEnd, 'MMM d')}
+                        <div className="flex items-center gap-2 px-2 min-w-[120px] justify-center">
+                            <CalendarIcon size={14} className="text-red-500" />
+                            <span className="text-sm font-bold text-zinc-200">
+                                {format(currentMonth, 'MMM yyyy')}
                             </span>
-                            <input
-                                type="date"
-                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                onChange={(e) => jumpToWeek(e.target.value)}
-                            />
                         </div>
 
-                        <button onClick={nextWeek} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors">
-                            <ChevronRight size={18} />
+                        <button onClick={nextMonth} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors">
+                            <ChevronRight size={16} />
                         </button>
                     </div>
                 </div>
 
-                {/* Measure Pills */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4">
-                    <div className="flex items-center gap-2">
-                        <div className="text-xs font-bold text-zinc-600 uppercase tracking-widest mr-2 flex items-center gap-1">
-                            <Filter size={10} />
-                            Filter
-                        </div>
-                        {measures.map(m => {
-                            const colorName = m.color || 'emerald';
-                            const theme = getColor(colorName);
-                            const ItemIcon = ICON_MAP[m.icon || 'Target'] || ICON_MAP['Target'];
-                            const isVisible = visibleMeasureIds.has(m.id);
-                            return (
-                                <button
-                                    key={m.id}
-                                    onClick={() => toggleMeasure(m.id)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-200 whitespace-nowrap text-xs font-bold`}
-                                    style={{
-                                        backgroundColor: isVisible ? `${theme.hex}1a` : 'transparent',
-                                        borderColor: isVisible ? `${theme.hex}80` : 'rgba(255,255,255,0.1)',
-                                        color: isVisible ? theme.hex : '#52525b',
-                                    }}
-                                >
-                                    <ItemIcon size={12} />
-                                    {m.name}
-                                </button>
-                            )
-                        })}
-                    </div>
+                {/* Measure Cards List */}
+                <div className="flex flex-col gap-4">
+                    {measures.map(m => {
+                        const theme = getColor(m.color || 'emerald');
+                        const Icon = ICON_MAP[m.icon || 'Target'] || ICON_MAP['Target'];
+
+                        // Calculate Monthly Stats
+                        const daysInMonth = eachDayOfInterval({
+                            start: startOfMonth(currentMonth),
+                            end: endOfMonth(currentMonth)
+                        });
+
+                        const monthTotal = daysInMonth.reduce((acc, day) => {
+                            const stats = getDailyProgress(m, entries, day);
+                            return acc + stats.value;
+                        }, 0);
+
+                        const isCurrentMonth = isSameMonth(currentMonth, new Date());
+                        const daysPassed = isCurrentMonth ? new Date().getDate() : getDaysInMonth(currentMonth);
+                        const avgPerDay = daysPassed > 0 ? (monthTotal / daysPassed).toFixed(1) : '0.0';
+
+                        // Grid Generation
+                        const monthStart = startOfMonth(currentMonth);
+                        const startingDayIndex = getDay(monthStart);
+                        const offset = user.weekStart === 'MONDAY'
+                            ? (startingDayIndex === 0 ? 6 : startingDayIndex - 1)
+                            : startingDayIndex;
+
+                        const blanks = Array(offset).fill(null);
+                        const days = daysInMonth;
+
+                        return (
+                            <div key={m.id} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-3 flex flex-row items-stretch justify-between shadow-lg backdrop-blur-sm gap-3">
+                                {/* Left Side: Info & Stats */}
+                                <div className="flex flex-col justify-between min-w-[100px] py-1">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`p-1.5 rounded-lg bg-gradient-to-br ${theme.bg} bg-opacity-10 border border-white/5`}>
+                                            <Icon size={14} className={theme.text} />
+                                        </div>
+                                        <h3 className={`font-bold text-sm ${theme.text}`}>{m.name}</h3>
+                                    </div>
+
+                                    <div className="flex flex-col gap-0.5">
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider w-8">Total</span>
+                                            <span className="text-white font-mono font-bold text-sm">{monthTotal}</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider w-8">Avg</span>
+                                            <span className="text-white font-mono font-bold text-sm">{avgPerDay}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Side: Compact Connect 4 Grid */}
+                                <div className="bg-black/20 rounded-xl p-2.5 border border-white/5 flex-grow max-w-[65%]">
+                                    {/* Days Header */}
+                                    <div className="grid grid-cols-7 mb-1 gap-x-1">
+                                        {(user.weekStart === 'MONDAY'
+                                            ? ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                                            : ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+                                        ).map((d, i) => (
+                                            <div key={i} className="text-center text-[8px] font-bold text-zinc-600 w-3">{d}</div>
+                                        ))}
+                                    </div>
+
+                                    {/* Grid Circles */}
+                                    <div className="grid grid-cols-7 gap-y-1 gap-x-1">
+                                        {/* Blanks */}
+                                        {blanks.map((_, i) => (
+                                            <div key={`blank-${i}`} className="aspect-[4/3] rounded-md bg-white/5 opacity-[0.02]" />
+                                        ))}
+
+                                        {/* Days */}
+                                        {days.map(day => {
+                                            const stats = getDailyProgress(m, entries, day);
+                                            const hasEntry = stats.value > 0;
+
+                                            return (
+                                                <div key={day.toString()} className="flex items-center justify-center">
+                                                    <div
+                                                        className={`w-full aspect-[4/3] rounded-md flex items-center justify-center text-[10px] font-bold transition-all border
+                                                            ${hasEntry
+                                                                ? `${theme.bg} text-white border-transparent shadow-sm` // Active
+                                                                : 'bg-white/5 border-transparent text-zinc-700' // Empty Slot
+                                                            }
+                                                        `}
+                                                        style={hasEntry ? { backgroundColor: theme.hex } : {}}
+                                                    >
+                                                        {hasEntry ? stats.value : null}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
 
-                {/* Mobile Chart Area */}
-                <div className="flex-grow min-h-[400px] bg-zinc-900/30 border border-white/5 rounded-3xl relative overflow-hidden backdrop-blur-sm shadow-xl">
-                    <div className="absolute inset-0 p-4">
-                        {visibleMeasureIds.size > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={mobileChartData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                    <XAxis
-                                        dataKey="name"
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fill: '#71717a', fontSize: 11, fontWeight: 600 }}
-                                        dy={10}
-                                    />
-                                    <YAxis
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fill: '#71717a', fontSize: 10 }}
-                                        tickFormatter={(val) => `${val}%`}
-                                        domain={[0, 'auto']}
-                                    />
-                                    <RechartsTooltip
-                                        content={({ active, payload }) => {
-                                            if (active && payload && payload.length) {
-                                                const data = payload[0].payload;
-                                                return (
-                                                    <div className="bg-zinc-900/95 border border-white/10 p-3 rounded-xl shadow-2xl backdrop-blur-md">
-                                                        <p className="text-zinc-400 text-xs font-bold mb-2 uppercase tracking-wide">{data.fullDate}</p>
-                                                        <div className="space-y-1">
-                                                            {payload.map((p: any) => {
-                                                                const m = measures.find(m => m.id === p.dataKey);
-                                                                if (!m) return null;
-                                                                const theme = getColor(m.color || 'emerald');
-                                                                const raw = data[`${m.id}_raw`];
-                                                                const unit = data[`${m.id}_unit`];
-                                                                const target = data[`${m.id}_target`];
-                                                                return (
-                                                                    <div key={p.dataKey} className="flex items-center gap-3 text-xs">
-                                                                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: p.stroke }} />
-                                                                        <span className="text-zinc-300 font-medium">{p.name}</span>
-                                                                        <div className="ml-auto flex items-baseline gap-1">
-                                                                            <span className="font-bold font-mono" style={{ color: theme.hex }}>{raw}</span>
-                                                                            <span className="text-zinc-600 text-[10px]">{unit}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        }}
-                                    />
-                                    {measures.map(m => {
-                                        if (!visibleMeasureIds.has(m.id)) return null;
-                                        const theme = getColor(m.color || 'emerald');
-                                        return (
-                                            <Line
-                                                key={m.id}
-                                                type="monotone"
-                                                dataKey={m.id}
-                                                name={m.name}
-                                                stroke={theme.hex}
-                                                strokeWidth={3}
-                                                dot={false}
-                                                activeDot={{ r: 6, strokeWidth: 0, fill: theme.hex }}
-                                            />
-                                        );
-                                    })}
-                                </LineChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 gap-2">
-                                <Activity size={32} className="opacity-20" />
-                                <p>Select measures to view progress</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
             </div>
 
             {/* -------------------------------------------------------------------------- */
