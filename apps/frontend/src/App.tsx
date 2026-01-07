@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
-import { LayoutDashboard, Target, History, LogOut, ChevronRight, Loader2, Ruler, DollarSign, Settings as SettingsIcon, Menu, ChevronLeft, Plus } from 'lucide-react';
+import { LayoutDashboard, Target, History, LogOut, ChevronRight, Loader2, Ruler, DollarSign, Settings as SettingsIcon, Menu, ChevronLeft, Plus, User as UserIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import Dashboard from './pages/Dashboard';
@@ -48,6 +48,7 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
     const { user, loading, logout, refreshUser } = useAuth();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isQuickLogOpen, setIsQuickLogOpen] = useState(false);
+    const location = useLocation();
 
     if (loading) {
         return (
@@ -63,10 +64,39 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
     }
 
     return (
-        <div className="min-h-screen bg-[#09090b] text-zinc-100 flex font-sans selection:bg-red-500/30">
-            {/* Sidebar */}
+        <div className="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col xl:flex-row font-sans selection:bg-red-500/30">
+            {/* Mobile Header */}
+            <header className="xl:hidden sticky top-0 bg-zinc-900/80 backdrop-blur-xl border-b border-white/5 p-4 flex items-center justify-between z-30 h-16 safe-area-top">
+                <div className="flex items-center gap-2">
+                    <img src="/logo.png" alt="Kaizen Logo" className="w-8 h-8" />
+                    <h1 className="text-lg font-bold text-red-500 tracking-tight">Kaizen</h1>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    {/* Balance */}
+                    <div className="px-2 py-1.5 rounded-lg bg-white/5 border border-white/5 flex items-center gap-1.5 text-xs font-mono text-emerald-400">
+                        <DollarSign size={12} className="text-emerald-500" />
+                        <span>{user?.balance?.toFixed(2) || '0.00'}</span>
+                    </div>
+
+                    {/* Quick Log */}
+                    <button
+                        onClick={() => setIsQuickLogOpen(true)}
+                        className="w-8 h-8 flex items-center justify-center bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-lg shadow-red-900/20 active:scale-95 transition-all"
+                    >
+                        <Plus size={18} />
+                    </button>
+
+                    {/* Profile */}
+                    <Link to="/settings" className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center border border-white/10 text-xs font-bold text-zinc-400">
+                        {user?.name?.charAt(0) || <UserIcon size={14} />}
+                    </Link>
+                </div>
+            </header>
+
+            {/* Sidebar (Desktop) */}
             <aside
-                className={`sticky top-0 h-screen border-r border-white/5 flex flex-col bg-zinc-900/50 backdrop-blur-xl transition-all duration-300 z-20
+                className={`hidden xl:flex sticky top-0 h-screen border-r border-white/5 flex-col bg-zinc-900/50 backdrop-blur-xl transition-all duration-300 z-20
                 ${isCollapsed ? 'w-20' : 'w-72'}`}
             >
                 <div className="p-4 flex items-center justify-between border-b border-white/5 h-16">
@@ -112,7 +142,7 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
                         <button
                             onClick={() => setIsQuickLogOpen(true)}
                             className={`flex items-center justify-center bg-red-600 hover:bg-red-500 text-white rounded-xl transition-all shadow-lg shadow-red-900/20 active:scale-95
-                            ${isCollapsed ? 'w-10 h-10' : 'w-10 h-10'}`} // Keep button generic square/icon for now or full width? User asked for visible at all times side by side.
+                            ${isCollapsed ? 'w-10 h-10' : 'w-10 h-10'}`}
                             title="Quick Log"
                         >
                             <Plus size={20} />
@@ -140,11 +170,37 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-grow p-6 overflow-y-auto w-full">
+            <main className="flex-grow p-4 md:p-6 overflow-y-auto w-full pb-24 xl:pb-6">
                 <AnimatePresence mode="wait">
                     {children}
                 </AnimatePresence>
             </main>
+
+            {/* Mobile Bottom Navigation */}
+            <nav className="xl:hidden fixed bottom-6 left-4 right-4 h-16 bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-2xl z-40 flex items-center justify-evenly shadow-2xl safe-area-bottom">
+                {[
+                    { to: '/', icon: LayoutDashboard },
+                    { to: '/log', icon: History },
+                    { to: '/measures', icon: Ruler },
+                    { to: '/goals', icon: Target },
+                    { to: '/transactions', icon: DollarSign },
+                ].map(({ to, icon: Icon }) => {
+                    const isActive = location.pathname === to;
+                    return (
+                        <Link key={to} to={to} className="relative p-3">
+                            {isActive && (
+                                <motion.div
+                                    layoutId="mobile-nav-pill"
+                                    className="absolute inset-0 bg-white/10 rounded-xl"
+                                    initial={false}
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                />
+                            )}
+                            <Icon size={22} className={isActive ? 'text-red-500' : 'text-zinc-500'} />
+                        </Link>
+                    );
+                })}
+            </nav>
 
             <QuickLogModal isOpen={isQuickLogOpen} onClose={() => setIsQuickLogOpen(false)} onUpdate={refreshUser} />
         </div>
