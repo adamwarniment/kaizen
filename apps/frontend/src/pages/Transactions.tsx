@@ -21,6 +21,7 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
     const [txTitle, setTxTitle] = useState('');
     const [txAmount, setTxAmount] = useState('');
     const [txDesc, setTxDesc] = useState('');
+    const [txDate, setTxDate] = useState('');
 
     useEffect(() => {
         fetchHistory();
@@ -59,12 +60,14 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
         setTxTitle('');
         setTxAmount('');
         setTxDesc('');
+        setTxDate('');
         setTxType('DEBIT');
         setShowModal(false);
     }
 
     const openCreateModal = () => {
         resetModal();
+        setTxDate(new Date().toISOString().substring(0, 10)); // Default to today
         setShowModal(true);
     }
 
@@ -73,6 +76,7 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
         setTxTitle(tx.title || 'Transaction');
         setTxAmount(Math.abs(tx.amount).toString());
         setTxDesc(tx.notes || '');
+        setTxDate(new Date(tx.createdAt).toISOString().substring(0, 10));
         // Infer type from amount sign or existing type data (if available on FE object properly)
         // If amount > 0 => CREDIT/REWARD. If < 0 => DEBIT/CASHOUT.
         const isCredit = tx.amount > 0;
@@ -91,14 +95,16 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                 await updateTransaction(editTxId, {
                     amount: parseFloat(txAmount),
                     title: txTitle,
-                    description: txDesc
+                    description: txDesc,
+                    date: txDate
                 });
             } else {
                 await createTransaction({
                     type: txType === 'CREDIT' ? 'CREDIT' : 'DEBIT',
                     amount: parseFloat(txAmount),
                     title: txTitle,
-                    description: txDesc
+                    description: txDesc,
+                    date: txDate
                 });
             }
 
@@ -291,6 +297,15 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-white/30 transition-colors"
                                         value={txTitle}
                                         onChange={e => setTxTitle(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Date</label>
+                                    <input
+                                        type="date"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-white/30 transition-colors"
+                                        value={txDate}
+                                        onChange={e => setTxDate(e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-2">

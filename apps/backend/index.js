@@ -688,7 +688,7 @@ app.get('/transactions', authenticateToken, async (req, res) => {
 });
 
 app.post('/transactions', authenticateToken, async (req, res) => {
-  const { type, amount, description, title } = req.body;
+  const { type, amount, description, title, date } = req.body;
   const userId = req.user.userId;
   const numericAmount = parseFloat(amount);
 
@@ -720,6 +720,7 @@ app.post('/transactions', authenticateToken, async (req, res) => {
           type: type === 'CREDIT' ? 'MANUAL_CREDIT' : 'MANUAL_DEBIT',
           title: title,
           notes: description || null,
+          createdAt: date ? new Date(date) : undefined
         }
       })
     ]);
@@ -734,7 +735,7 @@ app.post('/transactions', authenticateToken, async (req, res) => {
 // Update Transaction (Edit)
 app.put('/transactions/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
-  const { notes, amount, title } = req.body; // Allow editing notes, amount, title
+  const { notes, amount, title, date } = req.body; // Allow editing notes, amount, title, date
   const userId = req.user.userId;
 
   try {
@@ -773,7 +774,12 @@ app.put('/transactions/:id', authenticateToken, async (req, res) => {
         }),
         prisma.transaction.update({
           where: { id },
-          data: { notes, amount: newAmount, title }
+          data: {
+            notes,
+            amount: newAmount,
+            title,
+            createdAt: date ? new Date(date) : undefined
+          }
         })
       ]);
 
@@ -782,7 +788,11 @@ app.put('/transactions/:id', authenticateToken, async (req, res) => {
       // Just updating notes
       const updated = await prisma.transaction.update({
         where: { id },
-        data: { notes, title }
+        data: {
+          notes,
+          title,
+          createdAt: date ? new Date(date) : undefined
+        }
       });
       res.json(updated);
     }

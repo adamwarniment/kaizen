@@ -311,12 +311,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
 
                                     // 3. Calculate Earned Amount for the day
                                     const earnedAmount = transactions
-                                        .filter(t =>
-                                            // Match date
-                                            t.createdAt.startsWith(dayDateStr) &&
-                                            // Positive types
-                                            ['REWARD', 'BONUS', 'MANUAL_CREDIT', 'CREDIT'].includes(t.type)
-                                        )
+                                        .filter(t => {
+                                            const txDate = new Date(t.createdAt);
+                                            return isSameDay(txDate, day) &&
+                                                ['REWARD', 'BONUS', 'MANUAL_CREDIT', 'CREDIT'].includes(t.type);
+                                        })
                                         .reduce((sum, t) => sum + t.amount, 0);
 
                                     return (
@@ -337,7 +336,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
                                                 </span>
 
                                                 {/* Earned Pill */}
-                                                {allGoalsMet && earnedAmount > 0 && (
+                                                {earnedAmount > 0 && (
                                                     <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[9px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5 shadow-sm">
                                                         <span>+${earnedAmount.toFixed(2)}</span>
                                                     </div>

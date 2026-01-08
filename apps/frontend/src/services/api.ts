@@ -109,8 +109,8 @@ export const deleteEntry = (id: string) => api.delete(`/entries/${id}`);
 
 export const getHistory = () => api.get<Transaction[]>('/transactions');
 export const cashout = (data: { amount: number }) => api.post<{ message: string, newBalance: number }>('/transactions/cashout', data);
-export const createTransaction = (data: Partial<Transaction>) => api.post('/transactions', data);
-export const updateTransaction = (id: string, data: Partial<Transaction>) => api.put(`/transactions/${id}`, data);
+export const createTransaction = (data: Partial<Transaction> & { date?: string }) => api.post('/transactions', data);
+export const updateTransaction = (id: string, data: Partial<Transaction> & { date?: string }) => api.put(`/transactions/${id}`, data);
 export const deleteTransaction = (id: string) => api.delete(`/transactions/${id}`);
 
 export const getApiTokens = () => api.get<ApiToken[]>('/api-tokens');
