@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, DollarSign, Calendar as CalendarIcon, Loader2, ChevronLeft, ChevronRight, Activity, Filter } from 'lucide-react';
-import { getMeasures, getUser, Measure, User, Entry, getEntries } from '../services/api';
+import { getMeasures, getUser, Measure, User, Entry, getEntries, getHistory, Transaction } from '../services/api';
 import { ICON_MAP, getColor } from '../utils/theme';
 import { Link } from 'react-router-dom';
 import { LineChart, Line, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -17,6 +17,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
     // Common State
     const [measures, setMeasures] = useState<Measure[]>([]);
     const [entries, setEntries] = useState<Entry[]>([]);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Desktop State (Calendar)
@@ -43,12 +44,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
 
     const fetchData = async () => {
         try {
-            const [measuresRes, entriesRes] = await Promise.all([
+            const [measuresRes, entriesRes, transactionsRes] = await Promise.all([
                 getMeasures(),
-                getEntries()
+                getEntries(),
+                getHistory()
             ]);
             setMeasures(measuresRes.data);
             setEntries(entriesRes.data);
+            setTransactions(transactionsRes.data);
         } catch (e) {
             console.error(e);
         } finally {
@@ -293,6 +296,29 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
                                 {calendarDays.map((day, idx) => {
                                     const isCurrentMonth = isSameMonth(day, monthStart);
                                     const isSelected = isSameDay(day, selectedDate);
+
+                                    // Calculate "Perfect Day" status
+                                    const dayDateStr = format(day, 'yyyy-MM-dd');
+
+                                    // 1. Check if ANY daily goals exist
+                                    const activeMeasures = measures.filter(m => m.goals?.some(g => g.timeframe === 'DAILY'));
+
+                                    // 2. Check if ALL active daily goals are met
+                                    const allGoalsMet = activeMeasures.length > 0 && activeMeasures.every(m => {
+                                        const stats = getDailyProgress(m, entries, day);
+                                        return stats.met;
+                                    });
+
+                                    // 3. Calculate Earned Amount for the day
+                                    const earnedAmount = transactions
+                                        .filter(t =>
+                                            // Match date
+                                            t.createdAt.startsWith(dayDateStr) &&
+                                            // Positive types
+                                            ['REWARD', 'BONUS', 'MANUAL_CREDIT', 'CREDIT'].includes(t.type)
+                                        )
+                                        .reduce((sum, t) => sum + t.amount, 0);
+
                                     return (
                                         <div
                                             key={day.toISOString()}
@@ -309,6 +335,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
                                                         isSelected ? 'bg-white text-black' : 'text-zinc-500'}`}>
                                                     {format(day, 'd')}
                                                 </span>
+
+                                                {/* Earned Pill */}
+                                                {allGoalsMet && earnedAmount > 0 && (
+                                                    <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[9px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5 shadow-sm">
+                                                        <span>+${earnedAmount.toFixed(2)}</span>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Daily Progress Bars */}
