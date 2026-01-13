@@ -41,6 +41,7 @@ export interface Measure {
     unit: string;
     icon?: string;
     color?: string;
+    type?: 'NUMBER' | 'TIME';
     goals?: Goal[];
     entries?: Entry[];
     createdAt: string;
@@ -55,6 +56,7 @@ export interface Goal {
     timeframe: 'DAILY' | 'WEEKLY' | 'MONTHLY';
     type: 'TOTAL' | 'COUNT';
     targetValue: number;
+    operator?: 'GTE' | 'LTE';
     minPerEntry?: number;
     rewardAmount: number;
     createdAt: string;

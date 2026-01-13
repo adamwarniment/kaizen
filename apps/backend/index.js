@@ -193,7 +193,7 @@ app.get('/users/:id', async (req, res) => {
 // --- Measure Routes ---
 // --- Measure Routes ---
 app.post('/measures', authenticateToken, async (req, res) => {
-  const { name, unit, icon, color } = req.body;
+  const { name, unit, icon, color, type } = req.body;
   const userId = req.user.userId;
 
   if (!name || !unit) {
@@ -206,6 +206,7 @@ app.post('/measures', authenticateToken, async (req, res) => {
         userId,
         name,
         unit,
+        type: type || 'NUMBER',
         icon: icon || 'Target',
         color: color || 'emerald'
       }
@@ -228,7 +229,7 @@ app.get('/measures', authenticateToken, async (req, res) => {
 
 app.put('/measures/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
-  const { name, unit, icon, color } = req.body;
+  const { name, unit, icon, color, type } = req.body;
   const userId = req.user.userId;
 
   try {
@@ -240,6 +241,7 @@ app.put('/measures/:id', authenticateToken, async (req, res) => {
       data: {
         name,
         unit,
+        type,
         icon,
         color
       }
@@ -289,7 +291,7 @@ app.get('/goals', authenticateToken, async (req, res) => {
 });
 
 app.post('/goals', authenticateToken, async (req, res) => {
-  const { measureId, timeframe, type, targetValue, rewardAmount, minPerEntry } = req.body;
+  const { measureId, timeframe, type, operator, targetValue, rewardAmount, minPerEntry } = req.body;
   const userId = req.user.userId;
 
   try {
@@ -303,7 +305,10 @@ app.post('/goals', authenticateToken, async (req, res) => {
       data: {
         measureId,
         timeframe,
+        measureId,
+        timeframe,
         type,
+        operator: operator || 'GTE',
         targetValue: parseFloat(targetValue),
         rewardAmount: parseFloat(rewardAmount),
         minPerEntry: minPerEntry ? parseFloat(minPerEntry) : undefined
@@ -557,7 +562,12 @@ const evaluateGoals = async (userId, measureId, entryDate) => {
   // Helper to check and award
   const processGoal = async (goal, currentAmount, periodId) => {
     // Check if goal conditions met
-    if (currentAmount >= goal.targetValue) {
+    const operator = goal.operator || 'GTE';
+    const isMet = operator === 'LTE'
+      ? currentAmount <= goal.targetValue
+      : currentAmount >= goal.targetValue;
+
+    if (isMet) {
       // Check if already rewarded for this period
       const existingTx = await prisma.transaction.findFirst({
         where: {
@@ -568,7 +578,7 @@ const evaluateGoals = async (userId, measureId, entryDate) => {
       });
 
       if (!existingTx) {
-        console.log(`Goal met! ${goal.timeframe} ${goal.type}: ${currentAmount}/${goal.targetValue}. Rewarding $${goal.rewardAmount}`);
+        console.log(`Goal met! ${goal.timeframe} ${goal.type} (${operator}): ${currentAmount}/${goal.targetValue}. Rewarding $${goal.rewardAmount}`);
 
         await prisma.$transaction([
           prisma.user.update({

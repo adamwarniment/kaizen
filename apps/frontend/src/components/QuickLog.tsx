@@ -15,6 +15,12 @@ interface LogItem {
     value: string;
 }
 
+const timeToMinutes = (time: string) => {
+    if (!time) return 0;
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
+};
+
 const QuickLogModal: React.FC<QuickLogModalProps> = ({ isOpen, onClose, onUpdate }) => {
     const [measures, setMeasures] = useState<Measure[]>([]);
     const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -63,19 +69,27 @@ const QuickLogModal: React.FC<QuickLogModalProps> = ({ isOpen, onClose, onUpdate
 
     const handleLog = async () => {
         // Filter out incomplete items
-        const validItems = logItems.filter(item => item.measureId && item.value && !isNaN(parseFloat(item.value)));
+        const validItems = logItems.filter(item => {
+            if (!item.measureId || !item.value) return false;
+            const measure = measures.find(m => m.id === item.measureId);
+            if (measure?.type === 'TIME') return true; // time string is valid
+            return !isNaN(parseFloat(item.value));
+        });
 
         if (validItems.length === 0) return;
 
         setSubmitting(true);
         try {
-            await Promise.all(validItems.map(item =>
-                createEntry({
+            await Promise.all(validItems.map(item => {
+                const measure = measures.find(m => m.id === item.measureId);
+                const isTime = measure?.type === 'TIME';
+
+                return createEntry({
                     measureId: item.measureId,
-                    value: parseFloat(item.value),
+                    value: isTime ? timeToMinutes(item.value) : parseFloat(item.value),
                     date: date
-                })
-            ));
+                });
+            }));
 
             onUpdate();
             onClose();
@@ -149,10 +163,10 @@ const QuickLogModal: React.FC<QuickLogModalProps> = ({ isOpen, onClose, onUpdate
                                                 ))}
                                             </select>
                                             <input
-                                                type="number"
+                                                type={measures.find(m => m.id === item.measureId)?.type === 'TIME' ? "time" : "number"}
                                                 value={item.value}
                                                 onChange={(e) => updateLogItem(item.id, 'value', e.target.value)}
-                                                placeholder="Value"
+                                                placeholder={measures.find(m => m.id === item.measureId)?.type === 'TIME' ? "00:00" : "Value"}
                                                 className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-red-500 outline-none text-sm"
                                                 autoFocus={index === logItems.length - 1}
                                             />

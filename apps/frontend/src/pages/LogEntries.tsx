@@ -10,6 +10,26 @@ interface LogEntriesProps {
     onUpdate: () => void;
 }
 
+const timeToMinutes = (time: string) => {
+    if (!time) return 0;
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
+};
+
+const minutesToTime = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${m.toString().padStart(2, '0')} ${period}`;
+};
+
+const minutesToInput = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+};
+
 const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
     const [entries, setEntries] = useState<Entry[]>([]);
     // Calendar Focus Month
@@ -70,7 +90,11 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
 
     const handleEditStart = (entry: Entry) => {
         setEditingEntryId(entry.id);
-        setEditValue(entry.value.toString());
+        if (entry.measure?.type === 'TIME') {
+            setEditValue(minutesToInput(entry.value));
+        } else {
+            setEditValue(entry.value.toString());
+        }
     };
 
     const handleEditCancel = () => {
@@ -78,10 +102,17 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
         setEditValue('');
     };
 
-    const handleEditSave = async (id: string) => {
-        if (!editValue || isNaN(parseFloat(editValue))) return;
+    const handleEditSave = async (id: string, measureType?: string) => {
+        let val: number;
+        if (measureType === 'TIME') {
+            val = timeToMinutes(editValue);
+        } else {
+            if (!editValue || isNaN(parseFloat(editValue))) return;
+            val = parseFloat(editValue);
+        }
+
         try {
-            const updated = await updateEntry(id, { value: parseFloat(editValue) });
+            const updated = await updateEntry(id, { value: val });
             // Update local state
             setEntries(prev => prev.map(e => e.id === id ? { ...e, value: updated.data.entry.value } : e));
             setEditingEntryId(null);
@@ -298,18 +329,18 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
                                                     {editingEntryId === entry.id ? (
                                                         <div className="flex items-center gap-1 ml-auto">
                                                             <input
-                                                                type="number"
+                                                                type={entry.measure?.type === 'TIME' ? "time" : "number"}
                                                                 value={editValue}
                                                                 onChange={e => setEditValue(e.target.value)}
-                                                                className="bg-black/50 border border-white/20 rounded px-1.5 py-0.5 text-xs w-16 text-white focus:border-emerald-500 outline-none"
+                                                                className="bg-black/50 border border-white/20 rounded px-1.5 py-0.5 text-xs w-20 text-white focus:border-emerald-500 outline-none"
                                                                 autoFocus
                                                             />
-                                                            <button onClick={() => handleEditSave(entry.id)} className="text-emerald-500 hover:text-emerald-400 p-1"><Check size={12} /></button>
+                                                            <button onClick={() => handleEditSave(entry.id, entry.measure?.type)} className="text-emerald-500 hover:text-emerald-400 p-1"><Check size={12} /></button>
                                                             <button onClick={handleEditCancel} className="text-red-500 hover:text-red-400 p-1"><X size={12} /></button>
                                                         </div>
                                                     ) : (
                                                         <div className={`ml-auto font-mono text-sm font-bold ${theme.text}`}>
-                                                            {entry.value}
+                                                            {entry.measure?.type === 'TIME' ? minutesToTime(entry.value) : entry.value}
                                                         </div>
                                                     )}
                                                 </div>

@@ -18,6 +18,7 @@ const Measures: React.FC<MeasuresProps> = ({ user, onUpdate }) => {
     const [editId, setEditId] = useState<string | null>(null);
     const [name, setName] = useState('');
     const [unit, setUnit] = useState('');
+    const [type, setType] = useState('NUMBER');
     const [selectedIcon, setSelectedIcon] = useState('Target');
     const [selectedColor, setSelectedColor] = useState('emerald');
 
@@ -39,6 +40,7 @@ const Measures: React.FC<MeasuresProps> = ({ user, onUpdate }) => {
     const resetForm = () => {
         setName('');
         setUnit('');
+        setType('NUMBER');
         setSelectedIcon('Target');
         setSelectedColor('emerald');
         setEditId(null);
@@ -48,6 +50,7 @@ const Measures: React.FC<MeasuresProps> = ({ user, onUpdate }) => {
         setEditId(measure.id);
         setName(measure.name);
         setUnit(measure.unit);
+        setType(measure.type || 'NUMBER');
         setSelectedIcon(measure.icon || 'Target');
         setSelectedColor(measure.color || 'emerald');
         setShowModal(true);
@@ -67,6 +70,7 @@ const Measures: React.FC<MeasuresProps> = ({ user, onUpdate }) => {
             const payload = {
                 name,
                 unit,
+                type,
                 icon: selectedIcon,
                 color: selectedColor
             };
@@ -178,6 +182,28 @@ const Measures: React.FC<MeasuresProps> = ({ user, onUpdate }) => {
                             </div>
                             <div className="space-y-6">
                                 <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Data Type</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => { setType('NUMBER'); setUnit(''); }}
+                                            className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${type === 'NUMBER'
+                                                ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                                                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'}`}
+                                        >
+                                            <span className="font-bold">Number</span>
+                                        </button>
+                                        <button
+                                            onClick={() => { setType('TIME'); setUnit('Time'); }}
+                                            className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${type === 'TIME'
+                                                ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                                                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'}`}
+                                        >
+                                            <span className="font-bold">Time</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Measure Name</label>
                                     <input
                                         placeholder="e.g. Workout"
@@ -189,9 +215,10 @@ const Measures: React.FC<MeasuresProps> = ({ user, onUpdate }) => {
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Unit</label>
                                     <input
-                                        placeholder="e.g. minutes"
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                        placeholder={type === 'TIME' ? 'Time (hh:mm)' : 'e.g. minutes'}
+                                        className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors ${type === 'TIME' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         value={unit}
+                                        readOnly={type === 'TIME'}
                                         onChange={e => setUnit(e.target.value)}
                                     />
                                 </div>

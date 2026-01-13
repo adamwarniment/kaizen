@@ -40,6 +40,7 @@ model Measure {
   unit         String   // e.g., "minutes", "servings", "ml"
   icon         String   @default("Target")
   color        String   @default("emerald")
+  type         String   @default("NUMBER") // "NUMBER", "TIME"
   goals        Goal[]
   entries      Entry[]
   createdAt    DateTime @default(now())
@@ -53,6 +54,7 @@ model Goal {
   timeframe   String   // "DAILY", "WEEKLY"
   type        String   // "TOTAL", "COUNT"
   targetValue Float
+  operator    String   @default("GTE") // "GTE" (>=), "LTE" (<=)
   minPerEntry Float?   // For COUNT goals: an entry must be >= this to count
   rewardAmount Float
   createdAt   DateTime @default(now())

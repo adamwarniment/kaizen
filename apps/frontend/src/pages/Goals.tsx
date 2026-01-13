@@ -19,9 +19,36 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
     const [measureId, setMeasureId] = useState('');
     const [timeframe, setTimeframe] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY'>('DAILY');
     const [type, setType] = useState<'TOTAL' | 'COUNT'>('TOTAL');
+    const [operator, setOperator] = useState<'GTE' | 'LTE'>('GTE');
     const [targetValue, setTargetValue] = useState('');
     const [rewardAmount, setRewardAmount] = useState('');
     const [minPerEntry, setMinPerEntry] = useState('');
+
+    const selectedMeasure = measures.find(m => m.id === measureId);
+    const isTime = selectedMeasure?.type === 'TIME';
+
+    // Reset defaults when measure changes
+    useEffect(() => {
+        if (isTime) {
+            setOperator('LTE'); // Default to "Before" for time
+        } else {
+            setOperator('GTE'); // Default to "At least" for number
+        }
+    }, [measureId, isTime]);
+
+    const timeToMinutes = (time: string) => {
+        if (!time) return 0;
+        const [h, m] = time.split(':').map(Number);
+        return h * 60 + m;
+    };
+
+    const minutesToTime = (mins: number) => {
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        const period = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${m.toString().padStart(2, '0')} ${period}`;
+    };
 
     useEffect(() => {
         fetchData();
@@ -57,9 +84,10 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
                 measureId,
                 timeframe,
                 type,
-                targetValue: parseFloat(targetValue),
+                operator,
+                targetValue: isTime ? timeToMinutes(targetValue) : parseFloat(targetValue),
                 rewardAmount: parseFloat(rewardAmount),
-                minPerEntry: minPerEntry ? parseFloat(minPerEntry) : undefined
+                minPerEntry: minPerEntry ? (isTime ? timeToMinutes(minPerEntry) : parseFloat(minPerEntry)) : undefined
             });
             fetchData();
             onUpdate(); // Update balance or global state if needed
@@ -125,11 +153,15 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
                                     <h3 className="text-xl font-bold text-slate-200">{goal.measure?.name || 'Unknown Measure'}</h3>
                                     <div className="flex flex-wrap gap-2 mt-1 text-sm text-slate-400">
                                         <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-wider">
-                                            {goal.timeframe} {goal.type}
+                                            {goal.timeframe} {goal.type === 'TOTAL' ? (goal.measure?.type === 'TIME' ? 'Log' : 'Total') : 'Frequency'}
                                         </span>
-                                        <span>Target: <span className="text-white">{goal.targetValue} {goal.measure?.unit}</span></span>
+                                        <span className="text-slate-400">
+                                            {goal.operator === 'LTE' ? (goal.measure?.type === 'TIME' ? 'Before' : 'At most') : (goal.measure?.type === 'TIME' ? 'After' : 'At least')} <span className="text-white font-bold">
+                                                {goal.measure?.type === 'TIME' ? minutesToTime(goal.targetValue) : `${goal.targetValue} ${goal.measure?.unit}`}
+                                            </span>
+                                        </span>
                                         {goal.type === 'COUNT' && goal.minPerEntry && (
-                                            <span>(Min {goal.minPerEntry}/entry)</span>
+                                            <span>(Min {goal.measure?.type === 'TIME' ? minutesToTime(goal.minPerEntry) : goal.minPerEntry}/entry)</span>
                                         )}
                                     </div>
                                 </div>
@@ -179,6 +211,18 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
                                         >
                                             {measures.map(m => <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>)}
                                         </select>
+
+                                        {/* UX Helper: Show Data Type */}
+                                        {selectedMeasure && (
+                                            <div className="px-1 pt-1 flex items-center justify-between text-xs">
+                                                <span className="text-slate-500">Data Type: <span className={isTime ? "text-emerald-400 font-bold" : "text-slate-300 font-bold"}>{selectedMeasure.type || 'NUMBER'}</span></span>
+                                                {!isTime && selectedMeasure.name.toLowerCase().includes('time') && (
+                                                    <span className="text-yellow-500 flex items-center gap-1">
+                                                        <AlertCircle size={12} /> Check measure settings
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
@@ -194,7 +238,7 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Type</label>
+                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Tracking Method</label>
                                             <select
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-yellow-500/50 transition-colors"
                                                 value={type}
@@ -208,23 +252,33 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Target</label>
+                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Requirement</label>
+                                            <select
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-yellow-500/50 transition-colors"
+                                                value={operator}
+                                                onChange={e => setOperator(e.target.value as 'GTE' | 'LTE')}
+                                            >
+                                                {isTime ? (
+                                                    <>
+                                                        <option value="LTE">Before (Usually)</option>
+                                                        <option value="GTE">After</option>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <option value="GTE">At Least (Usually)</option>
+                                                        <option value="LTE">At Most</option>
+                                                    </>
+                                                )}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Target {isTime ? 'Time' : 'Value'}</label>
                                             <input
-                                                type="number"
-                                                placeholder="e.g. 30"
+                                                type={isTime ? "time" : "number"}
+                                                placeholder={isTime ? "06:30" : "e.g. 30"}
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-yellow-500/50 transition-colors"
                                                 value={targetValue}
                                                 onChange={e => setTargetValue(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Reward ($)</label>
-                                            <input
-                                                type="number"
-                                                placeholder="e.g. 5"
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-yellow-500/50 transition-colors"
-                                                value={rewardAmount}
-                                                onChange={e => setRewardAmount(e.target.value)}
                                             />
                                         </div>
                                     </div>
@@ -233,14 +287,25 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Minimum per Entry (Optional)</label>
                                             <input
-                                                type="number"
-                                                placeholder="e.g. 30 (User must log 30 to count)"
+                                                type={isTime ? "time" : "number"}
+                                                placeholder={isTime ? "00:30" : "e.g. 30"}
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-yellow-500/50 transition-colors"
                                                 value={minPerEntry}
                                                 onChange={e => setMinPerEntry(e.target.value)}
                                             />
                                         </div>
                                     )}
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Reward Amount ($)</label>
+                                        <input
+                                            type="number"
+                                            placeholder="e.g. 5.00"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-yellow-500/50 transition-colors"
+                                            value={rewardAmount}
+                                            onChange={e => setRewardAmount(e.target.value)}
+                                        />
+                                    </div>
 
                                     <button onClick={handleCreate} className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold py-3 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg shadow-yellow-900/20 mt-4">
                                         Create Goal
