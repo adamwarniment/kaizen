@@ -18,7 +18,7 @@ const Measures: React.FC<MeasuresProps> = ({ user, onUpdate }) => {
     const [editId, setEditId] = useState<string | null>(null);
     const [name, setName] = useState('');
     const [unit, setUnit] = useState('');
-    const [type, setType] = useState('NUMBER');
+    const [type, setType] = useState<'NUMBER' | 'TIME'>('NUMBER');
     const [selectedIcon, setSelectedIcon] = useState('Target');
     const [selectedColor, setSelectedColor] = useState('emerald');
 
