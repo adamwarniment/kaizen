@@ -4,7 +4,7 @@ import { TrendingUp, DollarSign, Calendar as CalendarIcon, Loader2, ChevronLeft,
 import { getMeasures, getUser, Measure, User, Entry, getEntries, getHistory, Transaction } from '../services/api';
 import { ICON_MAP, getColor } from '../utils/theme';
 import { Link } from 'react-router-dom';
-import { LineChart, Line, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { LineChart, Line, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths, isToday, addWeeks, subWeeks, parseISO, getDay, getDaysInMonth, isFuture } from 'date-fns';
 import { calculateStreak, getDailyProgress, getTrendData } from '../utils/stats';
 
@@ -14,6 +14,16 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
+    // Helper to format values (especially Time)
+    const formatValue = (val: number, type: string | undefined) => {
+        if (type === 'TIME') {
+            const hours = Math.floor(val / 60);
+            const mins = Math.round(val % 60);
+            return `${hours}:${mins.toString().padStart(2, '0')}`;
+        }
+        return val.toFixed(2);
+    };
+
     // Common State
     const [measures, setMeasures] = useState<Measure[]>([]);
     const [entries, setEntries] = useState<Entry[]>([]);
@@ -121,7 +131,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
             {/* -------------------------------------------------------------------------- */
             /*                            MOBILE VIEW (md:hidden)                          */
             /* -------------------------------------------------------------------------- */}
-            <div className="flex flex-col gap-6 h-full md:hidden pb-20">
+            <div className="flex flex-col gap-6 h-full sm:hidden pb-20">
                 {/* Header Section */}
                 <div className="flex flex-col gap-4">
                     <div>
@@ -169,7 +179,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
 
                         const isCurrentMonth = isSameMonth(currentMonth, new Date());
                         const daysPassed = isCurrentMonth ? new Date().getDate() : getDaysInMonth(currentMonth);
-                        const avgPerDay = daysPassed > 0 ? (monthTotal / daysPassed).toFixed(1) : '0.0';
+                        const avgPerDay = daysPassed > 0 ? (monthTotal / daysPassed).toFixed(2) : '0.00';
 
                         // Grid Generation
                         const monthStart = startOfMonth(currentMonth);
@@ -193,13 +203,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
                                     </div>
 
                                     <div className="flex flex-col gap-0.5">
-                                        <div className="flex items-baseline gap-1.5">
-                                            <span className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider w-8">Total</span>
-                                            <span className="text-white font-mono font-bold text-sm">{monthTotal}</span>
-                                        </div>
+                                        {m.type !== 'TIME' && (
+                                            <div className="flex items-baseline gap-1.5">
+                                                <span className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider w-8">Total</span>
+                                                <span className="text-white font-mono font-bold text-sm">{monthTotal.toFixed(2)}</span>
+                                            </div>
+                                        )}
                                         <div className="flex items-baseline gap-1.5">
                                             <span className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider w-8">Avg</span>
-                                            <span className="text-white font-mono font-bold text-sm">{avgPerDay}</span>
+                                            <span className="text-white font-mono font-bold text-sm">{m.type === 'TIME' ? formatValue(Number(avgPerDay), 'TIME') : avgPerDay}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -256,11 +268,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
             {/* -------------------------------------------------------------------------- */
             /*                           DESKTOP VIEW (hidden md:flex)                    */
             /* -------------------------------------------------------------------------- */}
-            <div className="hidden md:flex lg:h-[calc(100vh-190px)] xl:h-[calc(100vh-60px)] h-auto flex-col lg:flex-row gap-6 pb-2">
+            <div className="hidden sm:flex lg:h-[calc(100vh-190px)] xl:h-[calc(100vh-60px)] h-auto flex-col lg:flex-row gap-6 pb-2">
                 {/* Left Column: Header + Calendar */}
                 <div className="flex-grow flex flex-col min-h-[600px] lg:min-h-0 gap-4 lg:gap-2 xl:gap-4">
                     {/* Header */}
-                    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 flex-shrink-0">
+                    <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
                         <div>
                             <h1 className="text-3xl lg:text-xl xl:text-3xl font-bold bg-gradient-to-r from-red-500 to-rose-400 bg-clip-text text-transparent">
                                 Dashboard
@@ -403,7 +415,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
                         <Link to="/measures" className="text-red-500 text-xs font-bold hover:text-red-400 transition-colors uppercase tracking-wider">Manage</Link>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-3 pb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 pb-6">
                         {measures.map((m, i) => {
                             const colorName = m.color || 'emerald';
                             const theme = getColor(colorName);
@@ -467,10 +479,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
                                         <div className="text-right">
                                             <div className="flex items-baseline justify-end gap-1">
                                                 <span className={`text-lg font-bold tracking-tight ${dayStats.met ? theme.text : 'text-white'}`}>
-                                                    {dayStats.value}
+                                                    {typeof dayStats.value === 'number' ? formatValue(dayStats.value, m.type) : dayStats.value}
                                                 </span>
                                                 <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">
-                                                    / {dayStats.target} {m.unit}
+                                                    / {m.type === 'TIME' ? formatValue(dayStats.target, 'TIME') : dayStats.target} {m.unit}
                                                 </span>
                                             </div>
                                             <div className={`text-xs font-bold ${dayStats.met ? theme.text : 'text-zinc-500'}`}>
@@ -484,6 +496,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
                                         <div className="w-full h-full">
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <LineChart data={trendData}>
+                                                    <YAxis hide domain={[0, (max: number) => Math.max(max, dayStats.target || 0) * 1.1]} />
                                                     <XAxis
                                                         dataKey="name"
                                                         axisLine={false}
@@ -493,6 +506,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
                                                         padding={{ left: 10, right: 10 }}
                                                         interval={0}
                                                     />
+                                                    {dayStats.target > 0 && (
+                                                        <ReferenceLine y={dayStats.target} stroke="#fff" strokeDasharray="3 3" opacity={0.3} />
+                                                    )}
                                                     <RechartsTooltip
                                                         cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2 }}
                                                         content={({ active, payload }) => {
@@ -502,7 +518,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdate }) => {
                                                                     <div className="bg-zinc-900 border border-white/10 p-2 rounded-lg shadow-xl text-xs">
                                                                         <p className="font-bold text-zinc-300">{data.fullDate}</p>
                                                                         <p className={`${theme.text} font-mono mt-1`}>
-                                                                            {data.value} / {data.target} {m.unit}
+                                                                            {typeof data.value === 'number' ? formatValue(Number(data.value), m.type) : data.value} / {m.type === 'TIME' ? formatValue(data.target, 'TIME') : data.target} {m.unit}
                                                                         </p>
                                                                     </div>
                                                                 );
