@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getApiTokens, createApiToken, deleteApiToken, ApiToken, updateUser, User } from '../services/api';
-import { Key, Copy, Plus, Trash2, Check, Loader2, AlertCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { getApiTokens, createApiToken, deleteApiToken, ApiToken, updateUser, User, getEntries, getHistory } from '../services/api';
+import { Key, Copy, Plus, Trash2, Check, Loader2, AlertCircle, Calendar as CalendarIcon, Download } from 'lucide-react';
+import { downloadCSV } from '../utils/csv';
 
 interface SettingsProps {
     user: User;
@@ -27,6 +28,53 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate }) => {
             console.error(e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExportLogs = async () => {
+        try {
+            const res = await getEntries();
+            const data = res.data.map(entry => {
+                let formattedValue: any = entry.value;
+                if (entry.measure?.type === 'TIME') {
+                    const h = Math.floor(entry.value / 60);
+                    const m = entry.value % 60;
+                    const period = h >= 12 ? 'PM' : 'AM';
+                    const h12 = h % 12 || 12;
+                    formattedValue = `${h12}:${m.toString().padStart(2, '0')} ${period}`;
+                }
+
+                return {
+                    Date: new Date(entry.date).toLocaleDateString(),
+                    Activity: entry.measure?.name || 'Unknown Activity',
+                    Value: formattedValue,
+                    RawValue: entry.value,
+                    Unit: entry.measure?.unit || '',
+                    'Logged At': new Date(entry.createdAt).toLocaleString()
+                };
+            });
+            downloadCSV(`log_entries_${new Date().toISOString().split('T')[0]}.csv`, data);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to export logs.");
+        }
+    };
+
+    const handleExportTransactions = async () => {
+        try {
+            const res = await getHistory();
+            const data = res.data.map(tx => ({
+                Date: new Date(tx.createdAt).toLocaleDateString(),
+                Time: new Date(tx.createdAt).toLocaleTimeString(),
+                Title: tx.title || 'Transaction',
+                Amount: tx.amount,
+                Type: tx.type,
+                Notes: tx.notes || ''
+            }));
+            downloadCSV(`transactions_${new Date().toISOString().split('T')[0]}.csv`, data);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to export transactions.");
         }
     };
 
@@ -111,6 +159,49 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate }) => {
                             className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${user.weekStart === 'MONDAY' ? 'bg-blue-500 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
                             Monday
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Data Export Settings */}
+            <div className="glass p-8 rounded-2xl border border-white/5 space-y-6">
+                <div className="flex items-start gap-4">
+                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
+                        <Download size={32} />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-200">Export Data</h2>
+                        <p className="text-slate-400 mt-1">
+                            Download your data as CSV files for personal backup or external analysis.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white/5 p-5 rounded-xl border border-white/5 flex flex-col justify-between">
+                        <div>
+                            <h3 className="text-base font-bold text-slate-200">Log Entries</h3>
+                            <p className="text-xs text-slate-500 mt-1 mb-4">Export all tracked activities, including dates, measures, and values.</p>
+                        </div>
+                        <button
+                            onClick={handleExportLogs}
+                            className="btn-secondary w-full flex items-center justify-center gap-2 py-2 bg-white/5 hover:bg-white/10 text-slate-200 rounded-lg transition-all font-bold text-sm"
+                        >
+                            <Download size={16} /> Export Logs
+                        </button>
+                    </div>
+
+                    <div className="bg-white/5 p-5 rounded-xl border border-white/5 flex flex-col justify-between">
+                        <div>
+                            <h3 className="text-base font-bold text-slate-200">Transactions</h3>
+                            <p className="text-xs text-slate-500 mt-1 mb-4">Export your reward history, cashouts, and balance changes.</p>
+                        </div>
+                        <button
+                            onClick={handleExportTransactions}
+                            className="btn-secondary w-full flex items-center justify-center gap-2 py-2 bg-white/5 hover:bg-white/10 text-slate-200 rounded-lg transition-all font-bold text-sm"
+                        >
+                            <Download size={16} /> Export Transactions
                         </button>
                     </div>
                 </div>
@@ -205,7 +296,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate }) => {
                     ))}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
