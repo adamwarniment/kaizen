@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Target, Trash2, X, Loader2, Trophy, AlertCircle } from 'lucide-react';
+import { Plus, Target, Trash2, Loader2, Trophy, AlertCircle } from 'lucide-react';
 import { getGoals, createGoal, deleteGoal, getMeasures, Goal, Measure, User } from '../services/api';
 import { ICON_MAP, getColor } from '../utils/theme';
+import EntryPanel from '../components/EntryPanel';
 
 interface GoalsProps {
     user: User;
@@ -117,15 +118,16 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
         <div className="max-w-4xl mx-auto space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">My Goals</h1>
-                    <p className="text-slate-400">Set targets for your measures and earn rewards.</p>
+                    <p className="text-[10px] uppercase tracking-[.24em] font-semibold text-[#b7d58d] mb-2">Direction, not pressure</p>
+                    <h1 className="text-4xl kaizen-serif text-[#edf3e7]">Make progress tangible.</h1>
+                    <p className="text-slate-400 mt-2">Set targets that make the next small step clear.</p>
                 </div>
                 <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
                     <Plus size={20} /> Create New
                 </button>
             </div>
 
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {goals.length === 0 && (
                     <div className="p-10 rounded-3xl border border-dashed border-white/10 text-center text-slate-500">
                         No goals set yet. Click "Create New" to start earning!
@@ -143,7 +145,7 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
                             key={goal.id}
-                            className={`glass p-6 rounded-2xl flex items-center justify-between group border border-white/5 hover:${theme.border} transition-all`}
+                            className={`glass p-5 rounded-2xl flex items-center justify-between group border border-white/5 hover:${theme.border} transition-all`}
                         >
                             <div className="flex items-center gap-5">
                                 <div className={`w-12 h-12 ${theme.bgSoft} rounded-xl flex items-center justify-center border ${theme.border} ${theme.text}`}>
@@ -180,19 +182,7 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
                 })}
             </div>
 
-            <AnimatePresence>
-                {showModal && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="glass w-full max-w-md p-6 rounded-3xl border border-white/10"
-                        >
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-2xl font-bold text-slate-200">New Goal</h3>
-                                <button onClick={() => setShowModal(false)} className="text-slate-500 hover:text-slate-200 transition-colors"><X size={24} /></button>
-                            </div>
+            <EntryPanel isOpen={showModal} onClose={() => setShowModal(false)} eyebrow="Choose a direction" title="Set a goal" subtitle="A good target gives today’s effort a shape.">
 
                             {measures.length === 0 ? (
                                 <div className="text-center py-6">
@@ -312,10 +302,7 @@ const Goals: React.FC<GoalsProps> = ({ user, onUpdate }) => {
                                     </button>
                                 </div>
                             )}
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            </EntryPanel>
         </div>
     );
 };

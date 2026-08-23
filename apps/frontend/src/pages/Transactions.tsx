@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { History, ArrowUpRight, ArrowDownLeft, Wallet, Loader2, Plus, X, Edit2, Trash2 } from 'lucide-react';
 import { getHistory, cashout, createTransaction, updateTransaction, deleteTransaction, Transaction, User } from '../services/api';
 import CashFlowChart from '../components/CashFlowChart';
+import EntryPanel from '../components/EntryPanel';
+import { format } from 'date-fns';
 
 interface TransactionsProps {
     user: User;
@@ -67,7 +69,7 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
 
     const openCreateModal = () => {
         resetModal();
-        setTxDate(new Date().toISOString().substring(0, 10)); // Default to today
+        setTxDate(format(new Date(), 'yyyy-MM-dd')); // Default to today in the viewer's local calendar
         setShowModal(true);
     }
 
@@ -76,7 +78,7 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
         setTxTitle(tx.title || 'Transaction');
         setTxAmount(Math.abs(tx.amount).toString());
         setTxDesc(tx.notes || '');
-        setTxDate(new Date(tx.createdAt).toISOString().substring(0, 10));
+        setTxDate(tx.createdAt.substring(0, 10));
         // Infer type from amount sign or existing type data (if available on FE object properly)
         // If amount > 0 => CREDIT/REWARD. If < 0 => DEBIT/CASHOUT.
         const isCredit = tx.amount > 0;
@@ -133,47 +135,52 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
 
     const totalEarned = history.filter(h => h.amount > 0).reduce((acc, curr) => acc + curr.amount, 0);
     const totalSpent = Math.abs(history.filter(h => h.amount < 0).reduce((acc, curr) => acc + curr.amount, 0));
+    const formatTransactionDate = (value: string) => {
+        const [year, month, day] = value.substring(0, 10).split('-').map(Number);
+        return new Date(year, month - 1, day).toLocaleDateString();
+    };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Transactions</h1>
-                    <p className="text-slate-400">Track your earnings and spending.</p>
+                    <p className="text-[10px] uppercase tracking-[.24em] font-semibold text-[#b7d58d] mb-2">Your reward loop</p>
+                    <h1 className="text-3xl kaizen-serif text-[#edf3e7]">See the value you’ve built.</h1>
+                    <p className="text-sm text-slate-400 mt-1.5">Track the rewards that keep your practice alive.</p>
                 </div>
                 <button onClick={openCreateModal} className="btn-primary flex items-center gap-2">
                     <Plus size={20} /> New Transaction
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="glass p-6 rounded-2xl border border-white/5">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400"><Wallet size={20} /></div>
-                        <h3 className="text-slate-400 font-medium">Current Balance</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="glass p-4 rounded-xl border border-white/5">
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                        <div className="p-1.5 bg-emerald-500/10 rounded-lg text-emerald-400"><Wallet size={17} /></div>
+                        <h3 className="text-sm text-slate-400 font-medium">Current Balance</h3>
                     </div>
-                    <p className="text-3xl font-bold text-slate-200">${user?.balance?.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-slate-200">${user?.balance?.toFixed(2)}</p>
                 </div>
-                <div className="glass p-6 rounded-2xl border border-white/5">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-green-500/10 rounded-lg text-green-400"><ArrowDownLeft size={20} /></div>
-                        <h3 className="text-slate-400 font-medium">Total Earned</h3>
+                <div className="glass p-4 rounded-xl border border-white/5">
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                        <div className="p-1.5 bg-green-500/10 rounded-lg text-green-400"><ArrowDownLeft size={17} /></div>
+                        <h3 className="text-sm text-slate-400 font-medium">Total Earned</h3>
                     </div>
-                    <p className="text-3xl font-bold text-green-400">+${totalEarned.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-green-400">+${totalEarned.toFixed(2)}</p>
                 </div>
-                <div className="glass p-6 rounded-2xl border border-white/5">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-red-500/10 rounded-lg text-red-400"><ArrowUpRight size={20} /></div>
-                        <h3 className="text-slate-400 font-medium">Total Spent</h3>
+                <div className="glass p-4 rounded-xl border border-white/5">
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                        <div className="p-1.5 bg-red-500/10 rounded-lg text-red-400"><ArrowUpRight size={17} /></div>
+                        <h3 className="text-sm text-slate-400 font-medium">Total Spent</h3>
                     </div>
-                    <p className="text-3xl font-bold text-red-400">-${totalSpent.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-red-400">-${totalSpent.toFixed(2)}</p>
                 </div>
             </div>
 
             <CashFlowChart transactions={history} />
 
             {/* Cashout Section (Legacy/Quick) */}
-            <div className="glass p-6 rounded-2xl border border-white/5 flex items-center gap-4">
+            <div className="glass p-4 rounded-xl border border-white/5 flex items-center gap-4">
                 <div className="flex-1">
                     <h3 className="font-bold text-slate-200">Quick Cashout</h3>
                     <p className="text-xs text-slate-400">Redeem your balance instantly.</p>
@@ -190,8 +197,8 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                 </button>
             </div>
 
-            <div className="space-y-4">
-                <h3 className="text-xl font-bold text-slate-200">History</h3>
+            <div className="space-y-3">
+                <h3 className="text-lg font-bold text-slate-200">History</h3>
                 {history.length === 0 && (
                     <div className="p-10 rounded-3xl border border-dashed border-white/10 text-center text-slate-500">
                         No transactions found.
@@ -204,10 +211,10 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             key={tx.id}
-                            className="glass p-4 rounded-xl flex items-center justify-between border border-white/5 group"
+                            className="glass p-3 rounded-xl flex items-center justify-between border border-white/5 group"
                         >
-                            <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${isPositive
+                            <div className="flex items-center gap-3">
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border ${isPositive
                                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                                     : 'bg-red-500/10 border-red-500/20 text-red-400'
                                     }`}>
@@ -221,7 +228,7 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                                             <span className="text-[10px] bg-white/5 px-1.5 py-0.5 rounded text-white/50">{tx.type}</span>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-slate-500">{new Date(tx.createdAt).toLocaleDateString()} at {new Date(tx.createdAt).toLocaleTimeString()}</p>
+                                    <p className="text-xs text-slate-500">{formatTransactionDate(tx.createdAt)}</p>
                                 </div>
                             </div>
 
@@ -253,19 +260,7 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                 })}
             </div>
 
-            <AnimatePresence>
-                {showModal && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="glass w-full max-w-md p-6 rounded-3xl border border-white/10"
-                        >
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-2xl font-bold text-slate-200">{editTxId ? 'Edit Transaction' : 'New Transaction'}</h3>
-                                <button onClick={() => setShowModal(false)} className="text-slate-500 hover:text-slate-200 transition-colors"><X size={24} /></button>
-                            </div>
+            <EntryPanel isOpen={showModal} onClose={resetModal} eyebrow={editTxId ? 'Adjust the record' : 'Reward loop'} title={editTxId ? 'Edit transaction' : 'Add a transaction'} subtitle="Keep your reward economy honest and useful.">
 
                             <div className="space-y-4">
                                 {!editTxId && (
@@ -341,10 +336,7 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                                     {editTxId ? 'Save Changes' : (txType === 'CREDIT' ? 'Add Credit' : 'Confirm Debit')}
                                 </button>
                             </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            </EntryPanel>
         </div>
     );
 };

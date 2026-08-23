@@ -1,0 +1,25 @@
+{
+  "name": "Kaizen — Practice, better",
+  "short_name": "Kaizen",
+  "description": "A practice for continuous growth and improvement.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#111513",
+  "theme_color": "#111513",
+  "icons": [
+    {
+      "src": "/icons/kaizen-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/kaizen-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

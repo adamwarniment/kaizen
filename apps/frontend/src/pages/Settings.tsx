@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getApiTokens, createApiToken, deleteApiToken, ApiToken, updateUser, User, getEntries, getHistory } from '../services/api';
-import { Key, Copy, Plus, Trash2, Check, Loader2, AlertCircle, Calendar as CalendarIcon, Download } from 'lucide-react';
+import { Key, Copy, Plus, Trash2, Check, Loader2, AlertCircle, Calendar as CalendarIcon, Download, Ruler, Target } from 'lucide-react';
 import { downloadCSV } from '../utils/csv';
+import { Link } from 'react-router-dom';
 
 interface SettingsProps {
     user: User;
@@ -64,8 +65,8 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate }) => {
         try {
             const res = await getHistory();
             const data = res.data.map(tx => ({
-                Date: new Date(tx.createdAt).toLocaleDateString(),
-                Time: new Date(tx.createdAt).toLocaleTimeString(),
+                Date: tx.createdAt.substring(0, 10),
+                Time: tx.createdAt.includes('T') ? tx.createdAt.substring(11, 16) : '',
                 Title: tx.title || 'Transaction',
                 Amount: tx.amount,
                 Type: tx.type,
@@ -125,38 +126,38 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate }) => {
     if (loading) return <div className="text-center py-20 text-slate-400"><Loader2 className="animate-spin inline mr-2" /> Loading Settings...</div>;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Settings</h1>
+        <div className="max-w-4xl mx-auto space-y-5">
+            <div><p className="text-[10px] uppercase tracking-[.24em] font-semibold text-[#b7d58d] mb-1">Your rhythm</p><h1 className="text-3xl kaizen-serif text-[#edf3e7]">Shape the practice.</h1></div>
 
             {/* Application Settings */}
-            <div className="glass p-8 rounded-2xl border border-white/5 space-y-6">
-                <div className="flex items-start gap-4">
-                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400">
-                        <CalendarIcon size={32} />
+            <div className="glass p-5 rounded-xl border border-white/5 space-y-4">
+                <div className="flex items-start gap-3">
+                    <div className="p-2 bg-[#b7d58d]/10 rounded-lg text-[#b7d58d]">
+                        <CalendarIcon size={22} />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-200">Application Preferences</h2>
-                        <p className="text-slate-400 mt-1">
+                        <h2 className="text-lg font-bold text-slate-200">Application Preferences</h2>
+                        <p className="text-sm text-slate-400 mt-0.5">
                             Customize your global application experience.
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/5">
+                <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/5">
                     <div>
-                        <label className="text-base font-bold text-slate-200 block">Week Starts On</label>
+                        <label className="text-sm font-bold text-slate-200 block">Week Starts On</label>
                         <p className="text-xs text-slate-500 mt-1">Determines how weekly goals and calendar weeks are displayed.</p>
                     </div>
                     <div className="flex bg-black/40 p-1 rounded-lg border border-white/10">
                         <button
                             onClick={() => handleUpdateWeekStart('SUNDAY')}
-                            className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${user.weekStart === 'SUNDAY' || !user.weekStart ? 'bg-blue-500 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${user.weekStart === 'SUNDAY' || !user.weekStart ? 'bg-[#b7d58d] text-[#172014] shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
                             Sunday
                         </button>
                         <button
                             onClick={() => handleUpdateWeekStart('MONDAY')}
-                            className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${user.weekStart === 'MONDAY' ? 'bg-blue-500 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${user.weekStart === 'MONDAY' ? 'bg-[#b7d58d] text-[#172014] shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
                             Monday
                         </button>
@@ -164,22 +165,34 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate }) => {
                 </div>
             </div>
 
+            <div className="glass p-5 rounded-xl border border-white/5 space-y-4">
+                <div>
+                    <p className="text-[10px] uppercase tracking-[.2em] font-bold text-[#b7d58d]">Practice setup</p>
+                    <h2 className="text-lg font-bold text-slate-200 mt-1">Measures & goals</h2>
+                    <p className="text-sm text-slate-400 mt-0.5">Define what you track and the targets that give it meaning.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Link to="/measures" className="rounded-lg border border-[#dcebd0]/10 bg-white/[.04] p-4 hover:bg-white/[.07] transition-colors"><Ruler size={18} className="text-[#b7d58d] mb-2"/><p className="font-bold text-sm text-slate-200">Manage measures</p><p className="text-xs text-slate-500 mt-1">Activities and units</p></Link>
+                    <Link to="/goals" className="rounded-lg border border-[#dcebd0]/10 bg-white/[.04] p-4 hover:bg-white/[.07] transition-colors"><Target size={18} className="text-[#b7d58d] mb-2"/><p className="font-bold text-sm text-slate-200">Manage goals</p><p className="text-xs text-slate-500 mt-1">Targets and rewards</p></Link>
+                </div>
+            </div>
+
             {/* Data Export Settings */}
-            <div className="glass p-8 rounded-2xl border border-white/5 space-y-6">
-                <div className="flex items-start gap-4">
-                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
-                        <Download size={32} />
+            <div className="glass p-5 rounded-xl border border-white/5 space-y-4">
+                <div className="flex items-start gap-3">
+                    <div className="p-2 bg-[#b7d58d]/10 rounded-lg text-[#b7d58d]">
+                        <Download size={22} />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-200">Export Data</h2>
-                        <p className="text-slate-400 mt-1">
+                        <h2 className="text-lg font-bold text-slate-200">Export Data</h2>
+                        <p className="text-sm text-slate-400 mt-0.5">
                             Download your data as CSV files for personal backup or external analysis.
                         </p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white/5 p-5 rounded-xl border border-white/5 flex flex-col justify-between">
+                    <div className="bg-white/5 p-4 rounded-lg border border-white/5 flex flex-col justify-between">
                         <div>
                             <h3 className="text-base font-bold text-slate-200">Log Entries</h3>
                             <p className="text-xs text-slate-500 mt-1 mb-4">Export all tracked activities, including dates, measures, and values.</p>
@@ -192,7 +205,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate }) => {
                         </button>
                     </div>
 
-                    <div className="bg-white/5 p-5 rounded-xl border border-white/5 flex flex-col justify-between">
+                    <div className="bg-white/5 p-4 rounded-lg border border-white/5 flex flex-col justify-between">
                         <div>
                             <h3 className="text-base font-bold text-slate-200">Transactions</h3>
                             <p className="text-xs text-slate-500 mt-1 mb-4">Export your reward history, cashouts, and balance changes.</p>
@@ -207,14 +220,14 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate }) => {
                 </div>
             </div>
 
-            <div className="glass p-8 rounded-2xl border border-white/5 space-y-6">
-                <div className="flex items-start gap-4">
-                    <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400">
-                        <Key size={32} />
+            <div className="glass p-5 rounded-xl border border-white/5 space-y-4">
+                <div className="flex items-start gap-3">
+                    <div className="p-2 bg-[#b7d58d]/10 rounded-lg text-[#b7d58d]">
+                        <Key size={22} />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-200">Personal Access Tokens</h2>
-                        <p className="text-slate-400 mt-1">
+                        <h2 className="text-lg font-bold text-slate-200">Personal Access Tokens</h2>
+                        <p className="text-sm text-slate-400 mt-0.5">
                             Create tokens to authenticate external scripts or applications (like curl).
                             Treat these like passwords.
                         </p>
@@ -222,7 +235,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate }) => {
                 </div>
 
                 {/* Create Token Section */}
-                <div className="flex gap-4 items-end bg-white/5 p-4 rounded-xl border border-white/5">
+                <div className="flex gap-3 items-end bg-white/5 p-3 rounded-lg border border-white/5">
                     <div className="flex-grow space-y-2">
                         <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Token Name</label>
                         <input
@@ -235,7 +248,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdate }) => {
                     </div>
                     <button
                         onClick={handleCreateToken}
-                        className="btn-primary bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2.5 h-[42px] flex items-center gap-2 mb-0.5"
+                        className="btn-primary px-4 py-2 h-[40px] text-sm flex items-center gap-2 mb-0.5"
                     >
                         <Plus size={18} /> Generate Token
                     </button>

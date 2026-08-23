@@ -35,7 +35,7 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
     // Calendar Focus Month
     const [currentMonth, setCurrentMonth] = useState(new Date());
     // Selected Date in Calendar (default today)
-    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
     // Editing State
@@ -207,7 +207,7 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
         // Days
         for (let day = 1; day <= totalDays; day++) {
             const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const isToday = dateStr === new Date().toISOString().split('T')[0];
+            const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
             const dayEntries = entries.filter(e => e.date.substring(0, 10) === dateStr);
             const activityCount = dayEntries.length;
 
@@ -221,13 +221,13 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
                     onMouseEnter={() => setHoveredDate(dateStr)}
                     onMouseLeave={() => setHoveredDate(null)}
                     className={`h-24 border relative p-2 cursor-pointer transition-all duration-200 group
-                        ${isSelectedWeek ? 'bg-primary-500/10 border-primary-500/30' : 'border-white/5'}
+                        ${isSelectedWeek ? 'bg-[#b7d58d]/10 border-[#b7d58d]/30' : 'border-[#dcebd0]/[.07]'}
                         ${!isSelectedWeek && isHoveredWeek ? 'bg-white/5 border-white/20' : ''}
                         ${!isSelectedWeek && !isHoveredWeek ? 'hover:bg-white/5' : ''}
-                        ${isToday ? 'bg-white/5' : ''} 
+                        ${isToday ? 'bg-[#b7d58d]/[.06]' : ''}
                     `}
                 >
-                    <span className={`text-sm font-medium ${isToday ? 'text-primary-400' : 'text-slate-400'}`}>{day}</span>
+                    <span className={`text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[#b7d58d] text-[#172014] shadow-lg shadow-[#8ca95f]/20' : 'text-slate-400'}`}>{day}</span>
                     <div className="mt-2 space-y-1">
                         {activityCount > 0 && (
                             <div className="grid grid-cols-4 gap-0.5">
@@ -290,7 +290,8 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
             {/* Left Column: Weekly Log List */}
             <div className="glass p-6 rounded-3xl space-y-6 h-fit sticky top-4 max-h-[90vh] overflow-hidden flex flex-col">
                 <div>
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mb-2">Weekly Activities</h2>
+                    <p className="text-[10px] uppercase tracking-[.22em] font-semibold text-[#b7d58d] mb-2">The record</p>
+                    <h2 className="text-3xl kaizen-serif text-[#edf3e7] mb-2">Your week in motion.</h2>
                     <p className="text-slate-400 text-xs">
                         {selectedWeekRange.start.toLocaleDateString()} - {selectedWeekRange.end.toLocaleDateString()}
                     </p>
@@ -363,10 +364,10 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
             </div>
 
             {/* Right Column: Calendar */}
-            <div className="lg:col-span-2 glass p-6 rounded-3xl flex flex-col h-full min-h-[600px]">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-slate-200 flex items-center gap-2">
-                        <CalendarIcon className="text-emerald-400" />
+            <div className="lg:col-span-2 glass p-4 rounded-2xl flex flex-col h-full min-h-[600px]">
+                <div className="flex items-center justify-between mb-4 px-1">
+                    <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
+                        <CalendarIcon size={18} className="text-[#b7d58d]" />
                         {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                     </h2>
                     <div className="flex gap-2">
@@ -375,12 +376,12 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-7 gap-px bg-white/10 border border-white/10 rounded-xl overflow-hidden flex-grow">
+                <div className="grid grid-cols-7 gap-px bg-[#dcebd0]/[.08] border border-[#dcebd0]/[.08] rounded-2xl overflow-hidden flex-grow">
                     {(user.weekStart === 'MONDAY'
                         ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
                         : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
                     ).map(day => (
-                        <div key={day} className="h-10 bg-white/5 flex items-center justify-center text-xs font-bold uppercase text-slate-500 tracking-wider">
+                        <div key={day} className="h-9 bg-[#1a211c] flex items-center justify-center text-[10px] font-bold uppercase text-slate-500 tracking-wider">
                             {day}
                         </div>
                     ))}

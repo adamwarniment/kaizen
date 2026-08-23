@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, X, Trash2, Calendar, Target } from 'lucide-react';
+import { Plus, Loader2, Trash2, Calendar, Target } from 'lucide-react';
 import { createEntry, getMeasures, Measure } from '../services/api';
-import { motion, AnimatePresence } from 'framer-motion';
+import EntryPanel from './EntryPanel';
+import { format } from 'date-fns';
 
 interface QuickLogModalProps {
     isOpen: boolean;
@@ -23,7 +24,7 @@ const timeToMinutes = (time: string) => {
 
 const QuickLogModal: React.FC<QuickLogModalProps> = ({ isOpen, onClose, onUpdate }) => {
     const [measures, setMeasures] = useState<Measure[]>([]);
-    const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
     const [logItems, setLogItems] = useState<LogItem[]>([{ id: '1', measureId: '', value: '' }]);
     const [submitting, setSubmitting] = useState(false);
 
@@ -33,9 +34,9 @@ const QuickLogModal: React.FC<QuickLogModalProps> = ({ isOpen, onClose, onUpdate
                 try {
                     const res = await getMeasures();
                     setMeasures(res.data);
-                    // Pre-select first measure for the first item
+                    // Start with every measure: logging a day should never require hunting for a habit.
                     if (res.data.length > 0) {
-                        setLogItems([{ id: '1', measureId: res.data[0].id, value: '' }]);
+                        setLogItems(res.data.map((measure, index) => ({ id: `${measure.id}-${index}`, measureId: measure.id, value: '' })));
                     }
                 } catch (e) {
                     console.error(e);
@@ -43,7 +44,7 @@ const QuickLogModal: React.FC<QuickLogModalProps> = ({ isOpen, onClose, onUpdate
             };
             fetchMeasures();
             // Reset state on open
-            setDate(new Date().toISOString().split('T')[0]);
+            setDate(format(new Date(), 'yyyy-MM-dd'));
         }
     }, [isOpen]);
 
@@ -102,38 +103,8 @@ const QuickLogModal: React.FC<QuickLogModalProps> = ({ isOpen, onClose, onUpdate
     };
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-[50] flex items-center justify-center p-4">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="fixed inset-0 bg-black/80 backdrop-blur-sm"
-                    />
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="w-full max-w-lg bg-zinc-900 border border-white/10 rounded-2xl z-[51] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-                    >
-                        {/* Header */}
-                        <div className="flex justify-between items-center p-6 border-b border-white/5 bg-zinc-900 sticky top-0 md:bg-zinc-900">
-                            <div>
-                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                    <Target className="text-red-500" size={20} />
-                                    Quick Log
-                                </h2>
-                                <p className="text-zinc-500 text-xs mt-1">Record your progress quickly</p>
-                            </div>
-                            <button onClick={onClose} className="text-white/30 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-lg">
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+        <EntryPanel isOpen={isOpen} onClose={onClose} eyebrow="A small win" title="Log your practice" subtitle="Capture the effort while it’s fresh.">
+                        <div className="space-y-6">
                             {/* Date Selection */}
                             <div className="bg-white/5 p-4 rounded-xl border border-white/5">
                                 <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2 flex items-center gap-2">
@@ -189,23 +160,16 @@ const QuickLogModal: React.FC<QuickLogModalProps> = ({ isOpen, onClose, onUpdate
                             >
                                 <Plus size={16} /> Add another measure
                             </button>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="p-6 border-t border-white/5 bg-zinc-900/50 mt-auto">
                             <button
                                 onClick={handleLog}
                                 disabled={submitting}
-                                className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-900/20"
+                                className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {submitting ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} />}
                                 Log Entry
                             </button>
                         </div>
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>
+        </EntryPanel>
     );
 };
 

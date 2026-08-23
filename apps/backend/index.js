@@ -14,6 +14,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'kaizen-secret-key-123';
 app.use(cors());
 app.use(bodyParser.json());
 
+// Calendar dates are date-only values. Keep them at UTC midnight so a browser's
+// timezone can never move an entry or its reward to an adjacent calendar day.
+const parseCalendarDate = (value) => {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T00:00:00.000Z`);
+  }
+  return new Date(value);
+};
+
 // --- Demo User Middleware/Helper ---
 const getDemoUser = async () => {
   let user = await prisma.user.findFirst();
@@ -416,7 +425,7 @@ app.post('/entries', authenticateToken, async (req, res) => {
 
   try {
     // 1. Create the Entry
-    const entryDate = new Date(date);
+    const entryDate = parseCalendarDate(date);
     const entry = await prisma.entry.create({
       data: {
         userId,
@@ -449,13 +458,13 @@ app.put('/entries/:id', authenticateToken, async (req, res) => {
       where: { id },
       data: {
         value: value !== undefined ? parseFloat(value) : undefined,
-        date: date ? new Date(date) : undefined
+        date: date ? parseCalendarDate(date) : undefined
       }
     });
 
     // Re-evaluate goals if value or date changed
     // We pass the new date (or old if not changed) and measureId
-    const entryDate = date ? new Date(date) : entry.date;
+    const entryDate = date ? parseCalendarDate(date) : entry.date;
     const results = await evaluateGoals(userId, entry.measureId, entryDate);
 
     res.json({ entry: updatedEntry, ...results });
@@ -516,7 +525,7 @@ app.post('/entries/batch', authenticateToken, async (req, res) => {
         continue;
       }
 
-      const entryDate = new Date(date);
+      const entryDate = parseCalendarDate(date);
       try {
         const entry = await prisma.entry.create({
           data: {
@@ -593,7 +602,8 @@ const evaluateGoals = async (userId, measureId, entryDate) => {
               goalId: goal.id,
               periodId,
               title: 'Goal Met',
-              notes: `${measure.name} (${goal.timeframe} ${goal.type})`
+              notes: `${measure.name} (${goal.timeframe} ${goal.type})`,
+              createdAt: entryDate
             }
           })
         ]);
@@ -730,7 +740,7 @@ app.post('/transactions', authenticateToken, async (req, res) => {
           type: type === 'CREDIT' ? 'MANUAL_CREDIT' : 'MANUAL_DEBIT',
           title: title,
           notes: description || null,
-          createdAt: date ? new Date(date) : undefined
+          createdAt: date ? parseCalendarDate(date) : undefined
         }
       })
     ]);
@@ -788,7 +798,7 @@ app.put('/transactions/:id', authenticateToken, async (req, res) => {
             notes,
             amount: newAmount,
             title,
-            createdAt: date ? new Date(date) : undefined
+            createdAt: date ? parseCalendarDate(date) : undefined
           }
         })
       ]);
@@ -801,7 +811,7 @@ app.put('/transactions/:id', authenticateToken, async (req, res) => {
         data: {
           notes,
           title,
-          createdAt: date ? new Date(date) : undefined
+          createdAt: date ? parseCalendarDate(date) : undefined
         }
       });
       res.json(updated);
