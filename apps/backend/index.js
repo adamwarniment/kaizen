@@ -163,13 +163,14 @@ app.delete('/api-tokens/:id', authenticateToken, async (req, res) => {
 
 // --- User Routes ---
 app.put('/users/me', authenticateToken, async (req, res) => {
-  const { name, weekStart } = req.body;
+  const { name, weekStart, theme } = req.body;
   const userId = req.user.userId;
 
   try {
     const data = {};
     if (name) data.name = name;
     if (weekStart) data.weekStart = weekStart;
+    if (theme) data.theme = theme;
 
     const user = await prisma.user.update({
       where: { id: userId },
@@ -183,6 +184,13 @@ app.put('/users/me', authenticateToken, async (req, res) => {
 });
 
 app.get('/users/me', authenticateToken, async (req, res) => {
+  // Closed periods with unmet targets are charged here, so the balance the
+  // client renders is always already settled.
+  try {
+    await settleCuts(req.user.userId);
+  } catch (e) {
+    console.error('Cut settlement failed', e);
+  }
   const user = await prisma.user.findUnique({
     where: { id: req.user.userId },
     include: { transactions: true }
@@ -300,7 +308,7 @@ app.get('/goals', authenticateToken, async (req, res) => {
 });
 
 app.post('/goals', authenticateToken, async (req, res) => {
-  const { measureId, timeframe, type, operator, targetValue, rewardAmount, minPerEntry } = req.body;
+  const { measureId, timeframe, type, operator, targetValue, rewardAmount, cutAmount, minPerEntry } = req.body;
   const userId = req.user.userId;
 
   try {
@@ -319,7 +327,10 @@ app.post('/goals', authenticateToken, async (req, res) => {
         type,
         operator: operator || 'GTE',
         targetValue: parseFloat(targetValue),
-        rewardAmount: parseFloat(rewardAmount),
+        rewardAmount: parseFloat(rewardAmount || 0),
+        cutAmount: parseFloat(cutAmount || 0),
+        // Cuts never reach back past the moment they were switched on.
+        cutStartsAt: parseFloat(cutAmount || 0) > 0 ? new Date() : null,
         minPerEntry: minPerEntry ? parseFloat(minPerEntry) : undefined
       },
       include: { measure: true }
@@ -328,6 +339,40 @@ app.post('/goals', authenticateToken, async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Failed to create goal' });
+  }
+});
+
+app.put('/goals/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.userId;
+  const { timeframe, type, operator, targetValue, rewardAmount, cutAmount, minPerEntry } = req.body;
+
+  try {
+    const existing = await prisma.goal.findUnique({ where: { id }, include: { measure: true } });
+    if (!existing || existing.measure.userId !== userId) return res.sendStatus(404);
+
+    const data = {};
+    if (timeframe !== undefined) data.timeframe = timeframe;
+    if (type !== undefined) data.type = type;
+    if (operator !== undefined) data.operator = operator;
+    if (targetValue !== undefined) data.targetValue = parseFloat(targetValue);
+    if (rewardAmount !== undefined) data.rewardAmount = parseFloat(rewardAmount || 0);
+    if (minPerEntry !== undefined) data.minPerEntry = minPerEntry === null || minPerEntry === '' ? null : parseFloat(minPerEntry);
+
+    if (cutAmount !== undefined) {
+      const nextCut = parseFloat(cutAmount || 0);
+      data.cutAmount = nextCut;
+      // Start the clock when a cut is switched on; clear it when switched off, so
+      // re-enabling later never bills the gap in between.
+      if (nextCut > 0 && existing.cutAmount <= 0) data.cutStartsAt = new Date();
+      if (nextCut <= 0) data.cutStartsAt = null;
+    }
+
+    const goal = await prisma.goal.update({ where: { id }, data, include: { measure: true } });
+    res.json(goal);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to update goal' });
   }
 });
 
@@ -690,12 +735,142 @@ const evaluateGoals = async (userId, measureId, entryDate) => {
   return { totalReward, rewardsEarned };
 };
 
+/* --------------------------------------------------------------------------
+ * Cut settlement
+ *
+ * A reward can be granted the moment an entry meets the target, but a cut is
+ * the opposite: you cannot know a period was missed until the period is over.
+ * So cuts are settled lazily -- every time the client reads its balance or
+ * history, we walk the periods that have closed since the cut was switched on
+ * and charge the ones whose target was never met. No scheduler required, and
+ * nothing is missed if the app sits unused for a week.
+ * -------------------------------------------------------------------------- */
+
+// Never reach further back than this, so a long-dormant app cannot produce a
+// surprise avalanche of charges on first launch.
+const MAX_SETTLE_DAYS = 90;
+
+const startOfDayLocal = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const startOfWeekLocal = (date, weekStart) => {
+  const d = startOfDayLocal(date);
+  const day = d.getDay();
+  const diff = weekStart === 'SUNDAY' ? -day : (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diff);
+  return d;
+};
+
+const achievedInWindow = async (goal, userId, from, to) => {
+  const entries = await prisma.entry.findMany({
+    where: { measureId: goal.measureId, userId, date: { gte: from, lt: to } }
+  });
+  if (goal.type === 'COUNT') {
+    return entries.filter(e => !goal.minPerEntry || e.value >= goal.minPerEntry).length;
+  }
+  return entries.reduce((sum, e) => sum + e.value, 0);
+};
+
+const isTargetMet = (goal, amount) =>
+  (goal.operator || 'GTE') === 'LTE' ? amount <= goal.targetValue : amount >= goal.targetValue;
+
+const settleCuts = async (userId) => {
+  const goals = await prisma.goal.findMany({
+    where: { cutAmount: { gt: 0 }, measure: { userId } },
+    include: { measure: true }
+  });
+  if (goals.length === 0) return { totalCut: 0, cutsApplied: [] };
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const weekStartSetting = user?.weekStart || 'SUNDAY';
+
+  const today = startOfDayLocal(new Date());
+  const floor = startOfDayLocal(new Date());
+  floor.setDate(floor.getDate() - MAX_SETTLE_DAYS);
+
+  let totalCut = 0;
+  const cutsApplied = [];
+
+  const charge = async (goal, periodId, chargedAt) => {
+    // One transaction per goal+period covers both outcomes: if this period was
+    // already rewarded, it is not also cut.
+    const existing = await prisma.transaction.findFirst({
+      where: { userId, goalId: goal.id, periodId }
+    });
+    if (existing) return;
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { balance: { decrement: goal.cutAmount } }
+      }),
+      prisma.transaction.create({
+        data: {
+          userId,
+          amount: -Math.abs(goal.cutAmount),
+          type: 'CUT',
+          goalId: goal.id,
+          periodId,
+          title: 'Missed target',
+          notes: `${goal.measure.name} (${goal.timeframe} ${goal.type})`,
+          createdAt: chargedAt
+        }
+      })
+    ]);
+
+    totalCut += goal.cutAmount;
+    cutsApplied.push({ measure: goal.measure.name, periodId, amount: goal.cutAmount });
+  };
+
+  for (const goal of goals) {
+    const switchedOn = startOfDayLocal(goal.cutStartsAt || goal.createdAt);
+    const begin = switchedOn > floor ? switchedOn : floor;
+
+    if (goal.timeframe === 'DAILY') {
+      // Today is still in progress, so stop before it.
+      for (let d = new Date(begin); d < today; d.setDate(d.getDate() + 1)) {
+        const dayStart = new Date(d);
+        const dayEnd = new Date(d);
+        dayEnd.setDate(dayEnd.getDate() + 1);
+
+        const amount = await achievedInWindow(goal, userId, dayStart, dayEnd);
+        if (!isTargetMet(goal, amount)) {
+          await charge(goal, formatDate(dayStart), dayEnd);
+        }
+      }
+    } else if (goal.timeframe === 'WEEKLY') {
+      // Only weeks that have fully closed.
+      let weekStart = startOfWeekLocal(begin, weekStartSetting);
+      // A week already underway when the cut was switched on is not charged.
+      if (weekStart < begin) weekStart.setDate(weekStart.getDate() + 7);
+
+      while (true) {
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        if (weekEnd > today) break;
+
+        const amount = await achievedInWindow(goal, userId, weekStart, weekEnd);
+        if (!isTargetMet(goal, amount)) {
+          await charge(goal, `WEEK-${formatDate(weekStart)}`, weekEnd);
+        }
+        weekStart = new Date(weekEnd);
+      }
+    }
+  }
+
+  return { totalCut, cutsApplied };
+};
+
 
 
 // --- Transaction Routes ---
 app.get('/transactions', authenticateToken, async (req, res) => {
   const userId = req.user.userId;
   try {
+    await settleCuts(userId);
     const transactions = await prisma.transaction.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' }

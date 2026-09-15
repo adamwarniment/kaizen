@@ -106,26 +106,26 @@ const QuickLogModal: React.FC<QuickLogModalProps> = ({ isOpen, onClose, onUpdate
         <EntryPanel isOpen={isOpen} onClose={onClose} eyebrow="A small win" title="Log your practice" subtitle="Capture the effort while it’s fresh.">
                         <div className="space-y-6">
                             {/* Date Selection */}
-                            <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2 flex items-center gap-2">
+                            <div className="bg-raise/5 p-4 rounded-xl border border-hairline/5">
+                                <label className="text-xs font-bold kaizen-eyebrow uppercase tracking-wider text-ink-mid block mb-2 flex items-center gap-2">
                                     <Calendar size={12} /> Date
                                 </label>
                                 <input
                                     type="date"
                                     value={date}
                                     onChange={(e) => setDate(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-red-500 outline-none text-sm"
+                                    className="w-full bg-sunken/40 border border-hairline/10 rounded-lg px-3 py-2 text-ink-hi focus:border-red-500 outline-none text-sm"
                                 />
                             </div>
 
                             {/* Entries List */}
                             <div className="space-y-3">
-                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block">Measures</label>
+                                <label className="text-xs font-bold kaizen-eyebrow uppercase tracking-wider text-ink-mid block">Measures</label>
                                 {logItems.map((item, index) => (
                                     <div key={item.id} className="flex gap-2 items-start">
                                         <div className="flex-grow grid grid-cols-2 gap-2">
                                             <select
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:border-red-500 outline-none text-sm appearance-none"
+                                                className="w-full bg-sunken/40 border border-hairline/10 rounded-lg px-3 py-2.5 text-ink-hi focus:border-red-500 outline-none text-sm appearance-none"
                                                 value={item.measureId}
                                                 onChange={(e) => updateLogItem(item.id, 'measureId', e.target.value)}
                                             >
@@ -138,14 +138,14 @@ const QuickLogModal: React.FC<QuickLogModalProps> = ({ isOpen, onClose, onUpdate
                                                 value={item.value}
                                                 onChange={(e) => updateLogItem(item.id, 'value', e.target.value)}
                                                 placeholder={measures.find(m => m.id === item.measureId)?.type === 'TIME' ? "00:00" : "Value"}
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-red-500 outline-none text-sm"
+                                                className="w-full bg-sunken/40 border border-hairline/10 rounded-lg px-3 py-2 text-ink-hi focus:border-red-500 outline-none text-sm"
                                                 autoFocus={index === logItems.length - 1}
                                             />
                                         </div>
                                         {logItems.length > 1 && (
                                             <button
                                                 onClick={() => removeLogItem(item.id)}
-                                                className="p-2.5 bg-white/5 hover:bg-red-500/20 text-zinc-500 hover:text-red-500 rounded-lg transition-colors border border-white/5"
+                                                className="p-2.5 bg-raise/5 hover:bg-neg/20 text-ink-low hover:text-neg rounded-lg transition-colors border border-hairline/5"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
@@ -156,7 +156,7 @@ const QuickLogModal: React.FC<QuickLogModalProps> = ({ isOpen, onClose, onUpdate
 
                             <button
                                 onClick={addLogItem}
-                                className="w-full py-2 border border-dashed border-white/10 hover:border-red-500/50 hover:bg-red-500/5 text-zinc-500 hover:text-red-400 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
+                                className="w-full py-2 border border-dashed border-hairline/10 hover:border-neg/50 hover:bg-red-500/5 text-ink-low hover:text-neg rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
                             >
                                 <Plus size={16} /> Add another measure
                             </button>

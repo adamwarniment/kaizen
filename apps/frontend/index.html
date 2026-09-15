@@ -12,6 +12,29 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Kaizen" />
   <title>Kaizen — Practice, better</title>
+  <!-- Stamp theme + mode before first paint so switching never flashes. -->
+  <script>
+    (function () {
+      var FAM = { growth: { dark: '#111513', light: '#f3f6ee' }, sumi: { dark: '#0b0b0a', light: '#efece4' } };
+      var f = 'growth', m = 'dark';
+      try {
+        var sf = localStorage.getItem('kaizen-theme');
+        var sm = localStorage.getItem('kaizen-mode');
+        if (sf === 'growth' || sf === 'sumi') f = sf;
+        if (sm === 'dark' || sm === 'light' || sm === 'system') m = sm;
+      } catch (e) { /* blocked storage: defaults apply */ }
+      var resolved = m;
+      if (m === 'system') {
+        resolved = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+      }
+      var el = document.documentElement;
+      el.setAttribute('data-theme', f);
+      el.setAttribute('data-mode', resolved);
+      el.setAttribute('data-mode-pref', m);
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', FAM[f][resolved]);
+    })();
+  </script>
 </head>
 
 <body>

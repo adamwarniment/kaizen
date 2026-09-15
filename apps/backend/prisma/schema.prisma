@@ -14,6 +14,7 @@ model User {
   password     String?
   balance      Float         @default(0)
   weekStart    String        @default("SUNDAY") // "SUNDAY" or "MONDAY"
+  theme        String        @default("growth") // Visual theme id, see utils/themes.ts
   measures     Measure[]
   entries      Entry[]
   transactions Transaction[]
@@ -56,7 +57,9 @@ model Goal {
   targetValue Float
   operator    String   @default("GTE") // "GTE" (>=), "LTE" (<=)
   minPerEntry Float?   // For COUNT goals: an entry must be >= this to count
-  rewardAmount Float
+  rewardAmount Float    @default(0)
+  cutAmount   Float    @default(0)  // Charged when a period closes with the target unmet
+  cutStartsAt DateTime?             // Cuts only settle periods starting on/after this
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

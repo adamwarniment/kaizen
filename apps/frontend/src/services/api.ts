@@ -29,6 +29,7 @@ export interface User {
     email: string;
     balance: number;
     weekStart?: 'SUNDAY' | 'MONDAY';
+    theme?: string;
     createdAt: string;
 }
 
@@ -59,6 +60,8 @@ export interface Goal {
     operator?: 'GTE' | 'LTE';
     minPerEntry?: number;
     rewardAmount: number;
+    cutAmount: number;
+    cutStartsAt?: string | null;
     createdAt: string;
 }
 
@@ -82,7 +85,7 @@ export interface Transaction {
     id: string;
     userId: string;
     amount: number;
-    type: 'REWARD' | 'CASHOUT' | 'BONUS' | 'MANUAL_CREDIT' | 'MANUAL_DEBIT' | 'CREDIT' | 'DEBIT';
+    type: 'REWARD' | 'CUT' | 'CASHOUT' | 'BONUS' | 'MANUAL_CREDIT' | 'MANUAL_DEBIT' | 'CREDIT' | 'DEBIT';
     title: string;
     description?: string;
     notes?: string;
@@ -102,6 +105,7 @@ export const deleteMeasure = (id: string) => api.delete(`/measures/${id}`);
 
 export const getGoals = () => api.get<Goal[]>('/goals');
 export const createGoal = (data: Partial<Goal>) => api.post<Goal>('/goals', data);
+export const updateGoal = (id: string, data: Partial<Goal>) => api.put<Goal>(`/goals/${id}`, data);
 export const deleteGoal = (id: string) => api.delete(`/goals/${id}`);
 
 export const getEntries = (start?: string, end?: string) => api.get<Entry[]>('/entries', { params: { start, end } });

@@ -221,13 +221,13 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
                     onMouseEnter={() => setHoveredDate(dateStr)}
                     onMouseLeave={() => setHoveredDate(null)}
                     className={`h-24 border relative p-2 cursor-pointer transition-all duration-200 group
-                        ${isSelectedWeek ? 'bg-[#b7d58d]/10 border-[#b7d58d]/30' : 'border-[#dcebd0]/[.07]'}
-                        ${!isSelectedWeek && isHoveredWeek ? 'bg-white/5 border-white/20' : ''}
-                        ${!isSelectedWeek && !isHoveredWeek ? 'hover:bg-white/5' : ''}
-                        ${isToday ? 'bg-[#b7d58d]/[.06]' : ''}
+                        ${isSelectedWeek ? 'bg-accent/10 border-accent/30' : 'border-hairline/[.07]'}
+                        ${!isSelectedWeek && isHoveredWeek ? 'bg-raise/5 border-hairline/20' : ''}
+                        ${!isSelectedWeek && !isHoveredWeek ? 'hover:bg-raise/5' : ''}
+                        ${isToday ? 'bg-accent/[.06]' : ''}
                     `}
                 >
-                    <span className={`text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[#b7d58d] text-[#172014] shadow-lg shadow-[#8ca95f]/20' : 'text-slate-400'}`}>{day}</span>
+                    <span className={`text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-accent text-accent-ink shadow-lg shadow-accent/20' : 'text-ink-mid'}`}>{day}</span>
                     <div className="mt-2 space-y-1">
                         {activityCount > 0 && (
                             <div className="grid grid-cols-4 gap-0.5">
@@ -243,7 +243,7 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
                                     );
                                 })}
                                 {activityCount > 12 && (
-                                    <div className="flex items-center justify-center text-[8px] text-slate-500 font-medium">
+                                    <div className="flex items-center justify-center text-[8px] text-ink-low font-medium">
                                         +
                                     </div>
                                 )}
@@ -286,27 +286,27 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
     // For now, let's implement the logic assuming `Icons[name]` works if I update imports next.
 
     return (
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 h-full">
             {/* Left Column: Weekly Log List */}
-            <div className="glass p-6 rounded-3xl space-y-6 h-fit sticky top-4 max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="glass p-3 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 sm:space-y-6 h-fit sticky top-4 max-h-[90vh] overflow-hidden flex flex-col">
                 <div>
-                    <p className="text-[10px] uppercase tracking-[.22em] font-semibold text-[#b7d58d] mb-2">The record</p>
-                    <h2 className="text-3xl kaizen-serif text-[#edf3e7] mb-2">Your week in motion.</h2>
-                    <p className="text-slate-400 text-xs">
+                    <p className="text-[10px] kaizen-eyebrow uppercase tracking-[.22em] font-semibold text-accent mb-2">The record</p>
+                    <h2 className="text-xl sm:text-3xl kaizen-serif text-ink-hi mb-1 sm:mb-2">Your week in motion.</h2>
+                    <p className="text-ink-mid text-xs">
                         {selectedWeekRange.start.toLocaleDateString()} - {selectedWeekRange.end.toLocaleDateString()}
                     </p>
                 </div>
 
                 <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar space-y-6">
                     {weeklyEntries.length === 0 ? (
-                        <div className="text-center py-10 text-slate-500">
+                        <div className="text-center py-10 text-ink-low">
                             <p>No activity logged this week.</p>
                             <p className="text-xs mt-2">Select a date in the calendar to view other weeks.</p>
                         </div>
                     ) : (
                         Object.keys(groupedEntries).sort((a, b) => a.localeCompare(b)).map(dateKey => (
                             <div key={dateKey} className="space-y-3">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 sticky top-0 bg-[#0f1115] py-2 z-10 border-b border-white/5">
+                                <h3 className="text-xs font-bold kaizen-eyebrow uppercase tracking-wider text-ink-low sticky top-0 bg-[#0f1115] py-2 z-10 border-b border-hairline/5">
                                     {formatDateHeader(dateKey)}
                                 </h3>
                                 <div className="space-y-2">
@@ -316,7 +316,7 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
                                         const ItemIcon = ICON_MAP[entry.measure?.icon || 'Target'] || ICON_MAP['Target'];
 
                                         return (
-                                            <div key={entry.id} className="bg-white/5 rounded-lg px-3 py-2 flex items-center gap-3 group hover:bg-white/10 transition-colors border-l-2 relative overflow-hidden"
+                                            <div key={entry.id} className="bg-raise/5 rounded-lg px-3 py-2 flex items-center gap-3 group hover:bg-raise/10 transition-colors border-l-2 relative overflow-hidden"
                                                 style={{ borderLeftColor: theme.hex }}
                                             >
                                                 <div className={`flex-shrink-0 ${theme.text}`}>
@@ -324,8 +324,8 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
                                                 </div>
 
                                                 <div className="flex-grow flex items-center gap-2 overflow-hidden min-w-0">
-                                                    <span className="text-sm font-medium text-slate-200 whitespace-nowrap">{entry.measure?.name}</span>
-                                                    <span className="text-xs text-slate-500 whitespace-nowrap">({entry.measure?.unit})</span>
+                                                    <span className="text-sm font-medium text-ink-hi whitespace-nowrap">{entry.measure?.name}</span>
+                                                    <span className="text-xs text-ink-low whitespace-nowrap">({entry.measure?.unit})</span>
 
                                                     {editingEntryId === entry.id ? (
                                                         <div className="flex items-center gap-1 ml-auto">
@@ -333,14 +333,14 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
                                                                 type={entry.measure?.type === 'TIME' ? "time" : "number"}
                                                                 value={editValue}
                                                                 onChange={e => setEditValue(e.target.value)}
-                                                                className="bg-black/50 border border-white/20 rounded px-1.5 py-0.5 text-xs w-20 text-white focus:border-emerald-500 outline-none"
+                                                                className="bg-sunken/50 border border-hairline/20 rounded px-1.5 py-0.5 text-xs w-20 text-ink-hi focus:border-emerald-500 outline-none"
                                                                 autoFocus
                                                             />
-                                                            <button onClick={() => handleEditSave(entry.id, entry.measure?.type)} className="text-emerald-500 hover:text-emerald-400 p-1"><Check size={12} /></button>
-                                                            <button onClick={handleEditCancel} className="text-red-500 hover:text-red-400 p-1"><X size={12} /></button>
+                                                            <button onClick={() => handleEditSave(entry.id, entry.measure?.type)} className="text-emerald-500 hover:text-pos p-1"><Check size={12} /></button>
+                                                            <button onClick={handleEditCancel} className="text-neg hover:text-neg p-1"><X size={12} /></button>
                                                         </div>
                                                     ) : (
-                                                        <div className={`ml-auto font-mono text-sm font-bold ${theme.text}`}>
+                                                        <div className={`ml-auto kaizen-mono text-sm font-bold ${theme.text}`}>
                                                             {entry.measure?.type === 'TIME' ? minutesToTime(entry.value) : entry.value}
                                                         </div>
                                                     )}
@@ -348,9 +348,9 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
 
                                                 {/* Actions */}
                                                 {editingEntryId !== entry.id && (
-                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 bg-[#18181b] shadow-lg rounded-md border border-white/10">
-                                                        <button onClick={() => handleEditStart(entry)} className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-blue-400"><Edit2 size={12} /></button>
-                                                        <button onClick={() => handleDelete(entry.id)} className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-red-400"><Trash2 size={12} /></button>
+                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 bg-[#18181b] shadow-lg rounded-md border border-hairline/10">
+                                                        <button onClick={() => handleEditStart(entry)} className="p-1.5 hover:bg-raise/10 text-ink-mid hover:text-blue-400"><Edit2 size={12} /></button>
+                                                        <button onClick={() => handleDelete(entry.id)} className="p-1.5 hover:bg-raise/10 text-ink-mid hover:text-neg"><Trash2 size={12} /></button>
                                                     </div>
                                                 )}
                                             </div>
@@ -366,22 +366,22 @@ const LogEntries: React.FC<LogEntriesProps> = ({ user, onUpdate }) => {
             {/* Right Column: Calendar */}
             <div className="lg:col-span-2 glass p-4 rounded-2xl flex flex-col h-full min-h-[600px]">
                 <div className="flex items-center justify-between mb-4 px-1">
-                    <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
-                        <CalendarIcon size={18} className="text-[#b7d58d]" />
+                    <h2 className="text-lg font-bold text-ink-hi flex items-center gap-2">
+                        <CalendarIcon size={18} className="text-accent" />
                         {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                     </h2>
                     <div className="flex gap-2">
-                        <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white"><ChevronLeft /></button>
-                        <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white"><ChevronRight /></button>
+                        <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-raise/10 rounded-lg text-ink-mid hover:text-ink-hi"><ChevronLeft /></button>
+                        <button onClick={() => changeMonth(1)} className="p-2 hover:bg-raise/10 rounded-lg text-ink-mid hover:text-ink-hi"><ChevronRight /></button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-7 gap-px bg-[#dcebd0]/[.08] border border-[#dcebd0]/[.08] rounded-2xl overflow-hidden flex-grow">
+                <div className="grid grid-cols-7 gap-px bg-hairline/[.08] border border-hairline/[.08] rounded-2xl overflow-hidden flex-grow">
                     {(user.weekStart === 'MONDAY'
                         ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
                         : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
                     ).map(day => (
-                        <div key={day} className="h-9 bg-[#1a211c] flex items-center justify-center text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                        <div key={day} className="h-9 bg-surface flex items-center justify-center text-[10px] font-bold uppercase text-ink-low tracking-wider">
                             {day}
                         </div>
                     ))}

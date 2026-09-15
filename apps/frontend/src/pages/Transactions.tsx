@@ -5,6 +5,7 @@ import { getHistory, cashout, createTransaction, updateTransaction, deleteTransa
 import CashFlowChart from '../components/CashFlowChart';
 import EntryPanel from '../components/EntryPanel';
 import { format } from 'date-fns';
+import { BrushUnderline, Enso } from '../components/Brush';
 
 interface TransactionsProps {
     user: User;
@@ -131,7 +132,7 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
         }
     };
 
-    if (loading) return <div className="text-center py-20 text-slate-400"><Loader2 className="animate-spin inline mr-2" /> Loading Transactions...</div>;
+    if (loading) return <div className="text-center py-20 text-ink-mid"><Loader2 className="animate-spin inline mr-2" /> Loading Transactions...</div>;
 
     const totalEarned = history.filter(h => h.amount > 0).reduce((acc, curr) => acc + curr.amount, 0);
     const totalSpent = Math.abs(history.filter(h => h.amount < 0).reduce((acc, curr) => acc + curr.amount, 0));
@@ -141,66 +142,97 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-[10px] uppercase tracking-[.24em] font-semibold text-[#b7d58d] mb-2">Your reward loop</p>
-                    <h1 className="text-3xl kaizen-serif text-[#edf3e7]">See the value you’ve built.</h1>
-                    <p className="text-sm text-slate-400 mt-1.5">Track the rewards that keep your practice alive.</p>
+        <div className="max-w-4xl mx-auto space-y-3 sm:space-y-6">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="text-[10px] kaizen-eyebrow uppercase tracking-[.24em] font-semibold text-accent mb-1 sm:mb-2">Your reward loop</p>
+                    <h1 className="text-xl sm:text-3xl kaizen-serif text-ink-hi">See the value you’ve built.</h1>
+                    <BrushUnderline className="mt-1 -ml-0.5" width={168} />
+                    {/* Explanatory copy is nice on desktop, just noise on a phone. */}
+                    <p className="hidden sm:block text-sm text-ink-mid mt-1.5">Track the rewards that keep your practice alive.</p>
                 </div>
-                <button onClick={openCreateModal} className="btn-primary flex items-center gap-2">
-                    <Plus size={20} /> New Transaction
+                <button onClick={openCreateModal} className="btn-primary flex items-center gap-1.5 shrink-0 whitespace-nowrap px-3 py-2 text-xs sm:gap-2 sm:px-5 sm:py-3 sm:text-sm">
+                    <Plus size={16} className="sm:hidden" />
+                    <Plus size={20} className="hidden sm:block" />
+                    <span className="sm:hidden">New</span>
+                    <span className="hidden sm:inline">New Transaction</span>
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="glass p-4 rounded-xl border border-white/5">
-                    <div className="flex items-center gap-2.5 mb-1.5">
-                        <div className="p-1.5 bg-emerald-500/10 rounded-lg text-emerald-400"><Wallet size={17} /></div>
-                        <h3 className="text-sm text-slate-400 font-medium">Current Balance</h3>
+            {/* Phone: one compact strip — three stacked cards owned the whole screen. */}
+            <div className="md:hidden glass rounded-xl border border-hairline/5 grid grid-cols-3 divide-x divide-hairline/[.07]">
+                <div className="px-2.5 py-2.5 min-w-0">
+                    <div className="flex items-center gap-1 text-ink-mid mb-0.5">
+                        <Wallet size={11} className="text-pos shrink-0" />
+                        <span className="text-[9px] kaizen-eyebrow uppercase tracking-wider font-bold truncate">Balance</span>
                     </div>
-                    <p className="text-2xl font-bold text-slate-200">${user?.balance?.toFixed(2)}</p>
+                    <p className="text-base font-bold text-ink-hi tabular-nums truncate">${user?.balance?.toFixed(2)}</p>
                 </div>
-                <div className="glass p-4 rounded-xl border border-white/5">
-                    <div className="flex items-center gap-2.5 mb-1.5">
-                        <div className="p-1.5 bg-green-500/10 rounded-lg text-green-400"><ArrowDownLeft size={17} /></div>
-                        <h3 className="text-sm text-slate-400 font-medium">Total Earned</h3>
+                <div className="px-2.5 py-2.5 min-w-0">
+                    <div className="flex items-center gap-1 text-ink-mid mb-0.5">
+                        <ArrowDownLeft size={11} className="text-pos shrink-0" />
+                        <span className="text-[9px] kaizen-eyebrow uppercase tracking-wider font-bold truncate">Earned</span>
                     </div>
-                    <p className="text-2xl font-bold text-green-400">+${totalEarned.toFixed(2)}</p>
+                    <p className="text-base font-bold text-pos tabular-nums truncate">+${totalEarned.toFixed(2)}</p>
                 </div>
-                <div className="glass p-4 rounded-xl border border-white/5">
-                    <div className="flex items-center gap-2.5 mb-1.5">
-                        <div className="p-1.5 bg-red-500/10 rounded-lg text-red-400"><ArrowUpRight size={17} /></div>
-                        <h3 className="text-sm text-slate-400 font-medium">Total Spent</h3>
+                <div className="px-2.5 py-2.5 min-w-0">
+                    <div className="flex items-center gap-1 text-ink-mid mb-0.5">
+                        <ArrowUpRight size={11} className="text-neg shrink-0" />
+                        <span className="text-[9px] kaizen-eyebrow uppercase tracking-wider font-bold truncate">Spent</span>
                     </div>
-                    <p className="text-2xl font-bold text-red-400">-${totalSpent.toFixed(2)}</p>
+                    <p className="text-base font-bold text-neg tabular-nums truncate">-${totalSpent.toFixed(2)}</p>
+                </div>
+            </div>
+
+            <div className="hidden md:grid grid-cols-3 gap-4">
+                <div className="glass p-4 rounded-xl border border-hairline/5">
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                        <div className="p-1.5 bg-pos/10 rounded-lg text-pos"><Wallet size={17} /></div>
+                        <h3 className="text-sm text-ink-mid font-medium">Current Balance</h3>
+                    </div>
+                    <p className="text-2xl font-bold text-ink-hi">${user?.balance?.toFixed(2)}</p>
+                </div>
+                <div className="glass p-4 rounded-xl border border-hairline/5">
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                        <div className="p-1.5 bg-green-500/10 rounded-lg text-pos"><ArrowDownLeft size={17} /></div>
+                        <h3 className="text-sm text-ink-mid font-medium">Total Earned</h3>
+                    </div>
+                    <p className="text-2xl font-bold text-pos">+${totalEarned.toFixed(2)}</p>
+                </div>
+                <div className="glass p-4 rounded-xl border border-hairline/5">
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                        <div className="p-1.5 bg-neg/10 rounded-lg text-neg"><ArrowUpRight size={17} /></div>
+                        <h3 className="text-sm text-ink-mid font-medium">Total Spent</h3>
+                    </div>
+                    <p className="text-2xl font-bold text-neg">-${totalSpent.toFixed(2)}</p>
                 </div>
             </div>
 
             <CashFlowChart transactions={history} />
 
             {/* Cashout Section (Legacy/Quick) */}
-            <div className="glass p-4 rounded-xl border border-white/5 flex items-center gap-4">
-                <div className="flex-1">
-                    <h3 className="font-bold text-slate-200">Quick Cashout</h3>
-                    <p className="text-xs text-slate-400">Redeem your balance instantly.</p>
+            <div className="glass p-3 sm:p-4 rounded-xl border border-hairline/5 flex flex-wrap items-center gap-2 sm:gap-4">
+                <div className="flex-1 min-w-full sm:min-w-0">
+                    <h3 className="font-bold text-ink-hi text-sm sm:text-base">Quick Cashout</h3>
+                    <p className="text-xs text-ink-mid">Redeem your balance instantly.</p>
                 </div>
                 <input
                     type="number"
+                    inputMode="decimal"
                     placeholder="Amount ($)"
-                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-slate-200 w-32 focus:outline-none focus:border-red-500/50"
+                    className="bg-raise/5 border border-hairline/10 rounded-xl px-3 sm:px-4 py-2 text-sm text-ink-hi flex-1 min-w-0 sm:flex-none sm:w-32 focus:outline-none focus:border-neg/50"
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                 />
-                <button onClick={handleCashout} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 transition-all font-bold text-sm">
+                <button onClick={handleCashout} className="px-4 py-2 bg-neg/10 hover:bg-neg/20 text-neg rounded-xl border border-neg/20 transition-all font-bold text-sm shrink-0">
                     Cash Out
                 </button>
             </div>
 
-            <div className="space-y-3">
-                <h3 className="text-lg font-bold text-slate-200">History</h3>
+            <div className="space-y-2 sm:space-y-3">
+                <h3 className="text-base sm:text-lg font-bold text-ink-hi">History</h3>
                 {history.length === 0 && (
-                    <div className="p-10 rounded-3xl border border-dashed border-white/10 text-center text-slate-500">
+                    <div className="p-6 sm:p-10 rounded-2xl sm:rounded-3xl border border-dashed border-hairline/10 text-center text-sm text-ink-low">
                         No transactions found.
                     </div>
                 )}
@@ -211,36 +243,37 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             key={tx.id}
-                            className="glass p-3 rounded-xl flex items-center justify-between border border-white/5 group"
+                            className="glass p-2.5 sm:p-3 rounded-xl flex items-center justify-between gap-2 border border-hairline/5 group"
                         >
-                            <div className="flex items-center gap-3">
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border ${isPositive
-                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
+                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                                <div className={`w-7 h-7 sm:w-9 sm:h-9 shrink-0 rounded-full flex items-center justify-center border ${isPositive
+                                    ? 'bg-pos/10 border-pos/20 text-pos'
+                                    : 'bg-neg/10 border-neg/20 text-neg'
                                     }`}>
-                                    {isPositive ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
+                                    {isPositive ? <ArrowDownLeft size={15} /> : <ArrowUpRight size={15} />}
                                 </div>
-                                <div>
-                                    <div className="flex flex-col">
-                                        <p className="font-bold text-slate-200">{tx.title || 'Transaction'}</p>
-                                        {tx.notes && <p className="text-xs text-slate-400">{tx.notes}</p>}
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-[10px] bg-white/5 px-1.5 py-0.5 rounded text-white/50">{tx.type}</span>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-slate-500">{formatTransactionDate(tx.createdAt)}</p>
+                                <div className="min-w-0">
+                                    <p className="font-bold text-sm sm:text-base text-ink-hi truncate">{tx.title || 'Transaction'}</p>
+                                    {tx.notes && <p className="text-xs text-ink-mid truncate">{tx.notes}</p>}
+                                    {/* Type and date share one line instead of stacking into a tall row. */}
+                                    <p className="text-[11px] text-ink-low truncate">
+                                        <span className="text-ink-low">{tx.type}</span>
+                                        <span className="mx-1.5 text-ink-faint">·</span>
+                                        {formatTransactionDate(tx.createdAt)}
+                                    </p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-4">
-                                <span className={`font-bold text-lg ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                            <div className="flex items-center gap-1 sm:gap-4 shrink-0">
+                                <span className={`font-bold text-sm sm:text-lg tabular-nums ${isPositive ? 'text-pos' : 'text-neg'}`}>
                                     {isPositive ? '+' : '-'}${Math.abs(tx.amount).toFixed(2)}
                                 </span>
 
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {/* Touch devices have no hover, so these must stay visible on mobile. */}
+                                <div className="flex items-center gap-0.5 sm:gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => openEditModal(tx)}
-                                        className="p-2 hover:bg-white/10 rounded-lg text-slate-500 hover:text-white transition-all"
+                                        className="p-1.5 sm:p-2 hover:bg-raise/10 rounded-lg text-ink-low hover:text-ink-hi transition-all"
                                         title="Edit Transaction"
                                     >
                                         {/* Re-using Edit2 from icons if imported, else fallback or use text */}
@@ -248,7 +281,7 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                                     </button>
                                     <button
                                         onClick={() => handleDelete(tx.id)}
-                                        className="p-2 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-400 transition-all"
+                                        className="p-1.5 sm:p-2 hover:bg-neg/10 rounded-lg text-ink-low hover:text-neg transition-all"
                                         title="Delete Transaction"
                                     >
                                         <X size={16} />
@@ -264,16 +297,16 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
 
                             <div className="space-y-4">
                                 {!editTxId && (
-                                    <div className="flex bg-white/5 p-1 rounded-xl">
+                                    <div className="flex bg-raise/5 p-1 rounded-xl">
                                         <button
                                             onClick={() => setTxType('DEBIT')}
-                                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${txType === 'DEBIT' ? 'bg-red-500/20 text-red-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${txType === 'DEBIT' ? 'bg-neg/20 text-neg shadow-sm' : 'text-ink-low hover:text-ink-hi'}`}
                                         >
                                             Expenses (Debit)
                                         </button>
                                         <button
                                             onClick={() => setTxType('CREDIT')}
-                                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${txType === 'CREDIT' ? 'bg-emerald-500/20 text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${txType === 'CREDIT' ? 'bg-pos/20 text-pos shadow-sm' : 'text-ink-low hover:text-ink-hi'}`}
                                         >
                                             Income (Credit)
                                         </button>
@@ -281,45 +314,45 @@ const Transactions: React.FC<TransactionsProps> = ({ user, onUpdate }) => {
                                 )}
 
                                 {editTxId && (
-                                    <p className="text-xs text-center text-slate-500 mb-2">Editing <span className="text-slate-300 font-bold">{txType}</span> transaction.</p>
+                                    <p className="text-xs text-center text-ink-low mb-2">Editing <span className="text-ink-hi font-bold">{txType}</span> transaction.</p>
                                 )}
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Title</label>
+                                    <label className="text-xs font-bold kaizen-eyebrow uppercase tracking-wider text-ink-low ml-1">Title</label>
                                     <input
                                         type="text"
                                         placeholder={txType === 'CREDIT' ? 'e.g. Sold Item' : 'e.g. Coffee'}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-white/30 transition-colors"
+                                        className="w-full bg-raise/5 border border-hairline/10 rounded-xl px-4 py-3 text-ink-hi focus:outline-none focus:border-hairline/30 transition-colors"
                                         value={txTitle}
                                         onChange={e => setTxTitle(e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Date</label>
+                                    <label className="text-xs font-bold kaizen-eyebrow uppercase tracking-wider text-ink-low ml-1">Date</label>
                                     <input
                                         type="date"
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-white/30 transition-colors"
+                                        className="w-full bg-raise/5 border border-hairline/10 rounded-xl px-4 py-3 text-ink-hi focus:outline-none focus:border-hairline/30 transition-colors"
                                         value={txDate}
                                         onChange={e => setTxDate(e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Amount ($)</label>
+                                    <label className="text-xs font-bold kaizen-eyebrow uppercase tracking-wider text-ink-low ml-1">Amount ($)</label>
                                     <input
                                         type="number"
                                         placeholder="0.00"
-                                        className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-slate-200 focus:outline-none transition-colors ${txType === 'CREDIT' ? 'focus:border-emerald-500/50 border-white/10' : 'focus:border-red-500/50 border-white/10'
+                                        className={`w-full bg-raise/5 border rounded-xl px-4 py-3 text-ink-hi focus:outline-none transition-colors ${txType === 'CREDIT' ? 'focus:border-pos/50 border-hairline/10' : 'focus:border-neg/50 border-hairline/10'
                                             }`}
                                         value={txAmount}
                                         onChange={e => setTxAmount(e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Description (Optional)</label>
+                                    <label className="text-xs font-bold kaizen-eyebrow uppercase tracking-wider text-ink-low ml-1">Description (Optional)</label>
                                     <input
                                         type="text"
                                         placeholder="Add details..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-white/30 transition-colors"
+                                        className="w-full bg-raise/5 border border-hairline/10 rounded-xl px-4 py-3 text-ink-hi focus:outline-none focus:border-hairline/30 transition-colors"
                                         value={txDesc}
                                         onChange={e => setTxDesc(e.target.value)}
                                     />

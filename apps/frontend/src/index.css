@@ -1,47 +1,320 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Shippori+Mincho:wght@500;600;700&display=swap');
+
+/* Mister Brush -- GGBotNet, SIL Open Font License 1.1.
+   Licence travels with the font at /fonts/MisterBrush-OFL.txt */
+@font-face {
+  font-family: 'Mister Brush';
+  src: url('/fonts/MisterBrush.woff2') format('woff2'),
+       url('/fonts/MisterBrush.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* --------------------------------------------------------------------------
+ * Theme tokens
+ *
+ * Two axes: family (growth | sumi) x mode (dark | light). Every value a theme
+ * may change lives here; components reference the semantic Tailwind names
+ * (accent, hairline, raise, ink-*) and never a raw palette hex.
+ *
+ * Measure swatch colours (emerald/blue/rose...) are deliberately NOT themed --
+ * those are user data and should look the same everywhere.
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --paper-grain: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20width='240'%20height='240'><filter%20id='s'%20x='0'%20y='0'%20width='100%25'%20height='100%25'><feTurbulence%20type='fractalNoise'%20baseFrequency='0.9'%20numOctaves='2'%20seed='5'%20result='n'/><feColorMatrix%20in='n'%20type='matrix'%20values='0%200%200%200%200%20%200%200%200%200%200%20%200%200%200%200%200%20%201%200%200%200%20-0.52'/></filter><rect%20width='240'%20height='240'%20filter='url%28%23s%29'%20opacity='0.55'/></svg>");
+  --paper-wash: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20width='1000'%20height='1000'><filter%20id='w'><feTurbulence%20type='fractalNoise'%20baseFrequency='0.0035%200.0045'%20numOctaves='5'%20seed='19'/><feColorMatrix%20type='saturate'%20values='0'/><feComponentTransfer><feFuncA%20type='linear'%20slope='1.5'%20intercept='-0.86'/></feComponentTransfer><feGaussianBlur%20stdDeviation='7'/></filter><rect%20width='1000'%20height='1000'%20filter='url%28%23w%29'%20opacity='0.85'/></svg>");
+  --paper-dirt: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20width='420'%20height='420'><filter%20id='s'%20x='0'%20y='0'%20width='100%25'%20height='100%25'><feTurbulence%20type='fractalNoise'%20baseFrequency='0.22'%20numOctaves='1'%20seed='23'%20result='n'/><feColorMatrix%20in='n'%20type='matrix'%20values='0%200%200%200%200%20%200%200%200%200%200%20%200%200%200%200%200%20%201%200%200%200%20-0.66'/></filter><rect%20width='420'%20height='420'%20filter='url%28%23s%29'%20opacity='0.75'/></svg>");
+  --paper-spatter: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20width='600'%20height='600'><ellipse%20cx='271.8'%20cy='335.4'%20rx='2.91'%20ry='2.05'%20transform='rotate%2891%20271.8%20335.4%29'%20fill='%2523161310'%20opacity='0.58'/><ellipse%20cx='113.3'%20cy='307.0'%20rx='2.17'%20ry='1.92'%20transform='rotate%2817%20113.3%20307.0%29'%20fill='%2523161310'%20opacity='0.45'/><ellipse%20cx='57.7'%20cy='483.3'%20rx='2.33'%20ry='1.1'%20transform='rotate%28177%2057.7%20483.3%29'%20fill='%2523161310'%20opacity='0.76'/><ellipse%20cx='391.1'%20cy='368.4'%20rx='0.99'%20ry='0.45'%20transform='rotate%2895%20391.1%20368.4%29'%20fill='%2523161310'%20opacity='0.33'/><ellipse%20cx='116.6'%20cy='147.2'%20rx='0.68'%20ry='0.48'%20transform='rotate%2879%20116.6%20147.2%29'%20fill='%2523161310'%20opacity='0.7'/><ellipse%20cx='311.3'%20cy='383.1'%20rx='1.85'%20ry='1.51'%20transform='rotate%2882%20311.3%20383.1%29'%20fill='%2523161310'%20opacity='0.43'/><ellipse%20cx='594.6'%20cy='593.4'%20rx='2.7'%20ry='2.27'%20transform='rotate%2857%20594.6%20593.4%29'%20fill='%2523161310'%20opacity='0.41'/><ellipse%20cx='175.1'%20cy='45.6'%20rx='2.52'%20ry='1.69'%20transform='rotate%28152%20175.1%2045.6%29'%20fill='%2523161310'%20opacity='0.49'/><ellipse%20cx='571.2'%20cy='505.6'%20rx='0.6'%20ry='0.34'%20transform='rotate%28164%20571.2%20505.6%29'%20fill='%2523161310'%20opacity='0.53'/><ellipse%20cx='584.4'%20cy='239.3'%20rx='0.78'%20ry='0.62'%20transform='rotate%28140%20584.4%20239.3%29'%20fill='%2523161310'%20opacity='0.43'/><ellipse%20cx='55.6'%20cy='200.9'%20rx='3.01'%20ry='2.61'%20transform='rotate%2821%2055.6%20200.9%29'%20fill='%2523161310'%20opacity='0.42'/><ellipse%20cx='63.8'%20cy='39.5'%20rx='2.59'%20ry='1.42'%20transform='rotate%28101%2063.8%2039.5%29'%20fill='%2523161310'%20opacity='0.51'/><ellipse%20cx='116.9'%20cy='437.3'%20rx='0.93'%20ry='0.75'%20transform='rotate%2821%20116.9%20437.3%29'%20fill='%2523161310'%20opacity='0.5'/><ellipse%20cx='130.0'%20cy='163.7'%20rx='3.03'%20ry='2.7'%20transform='rotate%2855%20130.0%20163.7%29'%20fill='%2523161310'%20opacity='0.72'/><ellipse%20cx='128.7'%20cy='237.4'%20rx='2.74'%20ry='2.2'%20transform='rotate%2818%20128.7%20237.4%29'%20fill='%2523161310'%20opacity='0.77'/><ellipse%20cx='130.2'%20cy='156.9'%20rx='2.53'%20ry='1.6'%20transform='rotate%2853%20130.2%20156.9%29'%20fill='%2523161310'%20opacity='0.34'/><ellipse%20cx='57.3'%20cy='349.0'%20rx='1.21'%20ry='0.94'%20transform='rotate%2867%2057.3%20349.0%29'%20fill='%2523161310'%20opacity='0.52'/><ellipse%20cx='571.8'%20cy='290.4'%20rx='2.04'%20ry='1.89'%20transform='rotate%2833%20571.8%20290.4%29'%20fill='%2523161310'%20opacity='0.37'/><ellipse%20cx='541.8'%20cy='488.1'%20rx='1.22'%20ry='0.68'%20transform='rotate%28133%20541.8%20488.1%29'%20fill='%2523161310'%20opacity='0.75'/><ellipse%20cx='120.4'%20cy='566.5'%20rx='2.81'%20ry='2.2'%20transform='rotate%2876%20120.4%20566.5%29'%20fill='%2523161310'%20opacity='0.35'/><ellipse%20cx='26.9'%20cy='573.9'%20rx='1.2'%20ry='1.01'%20transform='rotate%2846%2026.9%20573.9%29'%20fill='%2523161310'%20opacity='0.7'/><ellipse%20cx='357.1'%20cy='177.7'%20rx='1.04'%20ry='0.88'%20transform='rotate%2812%20357.1%20177.7%29'%20fill='%2523161310'%20opacity='0.41'/><ellipse%20cx='335.1'%20cy='508.6'%20rx='2.14'%20ry='1.29'%20transform='rotate%28165%20335.1%20508.6%29'%20fill='%2523161310'%20opacity='0.4'/><ellipse%20cx='13.8'%20cy='163.4'%20rx='1.71'%20ry='0.83'%20transform='rotate%2832%2013.8%20163.4%29'%20fill='%2523161310'%20opacity='0.48'/><ellipse%20cx='342.7'%20cy='81.9'%20rx='1.51'%20ry='1.42'%20transform='rotate%28176%20342.7%2081.9%29'%20fill='%2523161310'%20opacity='0.62'/><ellipse%20cx='413.2'%20cy='350.0'%20rx='0.95'%20ry='0.45'%20transform='rotate%283%20413.2%20350.0%29'%20fill='%2523161310'%20opacity='0.74'/><ellipse%20cx='419.0'%20cy='574.0'%20rx='0.65'%20ry='0.52'%20transform='rotate%2887%20419.0%20574.0%29'%20fill='%2523161310'%20opacity='0.65'/><ellipse%20cx='192.8'%20cy='595.6'%20rx='0.79'%20ry='0.59'%20transform='rotate%28133%20192.8%20595.6%29'%20fill='%2523161310'%20opacity='0.73'/><ellipse%20cx='440.4'%20cy='420.6'%20rx='2.58'%20ry='2.46'%20transform='rotate%2863%20440.4%20420.6%29'%20fill='%2523161310'%20opacity='0.63'/><ellipse%20cx='537.3'%20cy='519.7'%20rx='1.64'%20ry='1.45'%20transform='rotate%28155%20537.3%20519.7%29'%20fill='%2523161310'%20opacity='0.57'/><ellipse%20cx='374.0'%20cy='230.3'%20rx='2.06'%20ry='1.62'%20transform='rotate%2814%20374.0%20230.3%29'%20fill='%2523161310'%20opacity='0.61'/><ellipse%20cx='592.0'%20cy='524.8'%20rx='2.42'%20ry='1.61'%20transform='rotate%28132%20592.0%20524.8%29'%20fill='%2523161310'%20opacity='0.58'/><ellipse%20cx='264.8'%20cy='500.3'%20rx='0.81'%20ry='0.7'%20transform='rotate%285%20264.8%20500.3%29'%20fill='%2523161310'%20opacity='0.59'/><ellipse%20cx='288.7'%20cy='140.3'%20rx='2.35'%20ry='1.7'%20transform='rotate%28111%20288.7%20140.3%29'%20fill='%2523161310'%20opacity='0.74'/><ellipse%20cx='155.5'%20cy='10.7'%20rx='1.35'%20ry='1.11'%20transform='rotate%2836%20155.5%2010.7%29'%20fill='%2523161310'%20opacity='0.38'/><ellipse%20cx='540.2'%20cy='394.7'%20rx='1.7'%20ry='1.6'%20transform='rotate%2859%20540.2%20394.7%29'%20fill='%2523161310'%20opacity='0.62'/><ellipse%20cx='121.5'%20cy='259.1'%20rx='2.61'%20ry='2.49'%20transform='rotate%28158%20121.5%20259.1%29'%20fill='%2523161310'%20opacity='0.48'/><ellipse%20cx='349.2'%20cy='191.4'%20rx='0.94'%20ry='0.68'%20transform='rotate%28151%20349.2%20191.4%29'%20fill='%2523161310'%20opacity='0.71'/><ellipse%20cx='425.0'%20cy='566.4'%20rx='1.29'%20ry='0.7'%20transform='rotate%2881%20425.0%20566.4%29'%20fill='%2523161310'%20opacity='0.43'/><ellipse%20cx='130.7'%20cy='249.1'%20rx='2.16'%20ry='1.56'%20transform='rotate%2857%20130.7%20249.1%29'%20fill='%2523161310'%20opacity='0.7'/><ellipse%20cx='585.4'%20cy='271.9'%20rx='0.79'%20ry='0.37'%20transform='rotate%28157%20585.4%20271.9%29'%20fill='%2523161310'%20opacity='0.32'/><ellipse%20cx='423.5'%20cy='341.8'%20rx='1.37'%20ry='1.21'%20transform='rotate%283%20423.5%20341.8%29'%20fill='%2523161310'%20opacity='0.37'/><ellipse%20cx='273.3'%20cy='18.6'%20rx='2.67'%20ry='1.55'%20transform='rotate%2825%20273.3%2018.6%29'%20fill='%2523161310'%20opacity='0.32'/><ellipse%20cx='376.5'%20cy='268.3'%20rx='2.17'%20ry='1.76'%20transform='rotate%28145%20376.5%20268.3%29'%20fill='%2523161310'%20opacity='0.76'/><ellipse%20cx='409.2'%20cy='122.0'%20rx='1.79'%20ry='0.98'%20transform='rotate%282%20409.2%20122.0%29'%20fill='%2523161310'%20opacity='0.53'/><ellipse%20cx='426.8'%20cy='110.0'%20rx='1.28'%20ry='0.82'%20transform='rotate%28126%20426.8%20110.0%29'%20fill='%2523161310'%20opacity='0.55'/><ellipse%20cx='364.1'%20cy='443.5'%20rx='4.88'%20ry='0.82'%20transform='rotate%28163%20364.1%20443.5%29'%20fill='%2523161310'%20opacity='0.24'/><ellipse%20cx='542.3'%20cy='424.5'%20rx='3.95'%20ry='0.68'%20transform='rotate%28113%20542.3%20424.5%29'%20fill='%2523161310'%20opacity='0.47'/><ellipse%20cx='231.0'%20cy='338.5'%20rx='6.58'%20ry='0.82'%20transform='rotate%28170%20231.0%20338.5%29'%20fill='%2523161310'%20opacity='0.35'/><ellipse%20cx='384.7'%20cy='134.7'%20rx='6.03'%20ry='0.83'%20transform='rotate%28115%20384.7%20134.7%29'%20fill='%2523161310'%20opacity='0.42'/><ellipse%20cx='139.4'%20cy='524.0'%20rx='6.93'%20ry='0.89'%20transform='rotate%2897%20139.4%20524.0%29'%20fill='%2523161310'%20opacity='0.44'/><ellipse%20cx='199.4'%20cy='529.6'%20rx='6.5'%20ry='0.64'%20transform='rotate%2815%20199.4%20529.6%29'%20fill='%2523161310'%20opacity='0.34'/><ellipse%20cx='328.2'%20cy='450.2'%20rx='5.21'%20ry='0.51'%20transform='rotate%28146%20328.2%20450.2%29'%20fill='%2523161310'%20opacity='0.24'/></svg>");
+
+  /* Chart colours default to the measure-independent trio; themes override. */
+  --chart-income: #34d399;
+  --chart-expense: #ec4899;
+  --chart-net: var(--ink-hi);
+}
+
+/* ===== Growth : dark (default) ============================================ */
+:root,
+[data-theme='growth'] {
+  --bg: #111513;
+  --bg-image:
+    radial-gradient(circle at 15% -10%, rgba(155, 200, 120, 0.16), transparent 31rem),
+    radial-gradient(circle at 93% 8%, rgba(245, 183, 91, 0.10), transparent 25rem),
+    linear-gradient(115deg, #111513 0%, #151a17 48%, #101311 100%);
+
+  --surface: 31 38 34;
+  --surface-alpha: .78;
+  --surface-shadow: 0 18px 45px rgba(0, 0, 0, .16);
+
+  --ink-hi: #edf3e7;
+  --ink-mid: #a8b3a6;
+  --ink-low: #7c877b;
+  --ink-faint: #5a635a;
+
+  --line-rgb: 220 235 208;
+  --raise-rgb: 255 255 255;
+  --sunken-rgb: 0 0 0;
+
+  --accent: #b7d58d;
+  --accent-rgb: 183 213 141;
+  --accent-strong: #c9e6a1;
+  --accent-ink: #172014;
+  --accent-shadow: 0 10px 24px rgba(145, 178, 103, .18);
+
+  --field-bg: rgba(9, 13, 11, .42);
+
+  --radius-md: .5rem;
+  --radius-lg: .75rem;
+  --radius-xl: .75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+
+  /* Three roles, and only three:
+     display = page headings, ui = menus/cards/labels, meta = eyebrows + figures. */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-ui: 'DM Sans', system-ui, sans-serif;
+  --font-meta: 'DM Mono', ui-monospace, monospace;
+  --display-tracking: -.04em;
+  --display-weight: 600;
+  --display-scale: 1;
+  --eyebrow-tracking: .24em;
+
+  --grid-line: rgba(208, 229, 188, .035);
+  --texture: none;
+  --texture-blend: normal;
+  --texture-opacity: 0;
+
+  --chart-grid: rgba(255, 255, 255, .07);
+  --chart-axis: #a8b3a6;
+  --chart-tooltip-bg: #1e2420;
+  --chart-tooltip-border: rgba(220, 235, 208, .16);
+  --chart-net: #e2e8f0;
+
+  --pos-rgb: 52 211 153;
+  --neg-rgb: 248 113 113;
+}
+
+/* ===== Growth : light ===================================================== */
+[data-theme='growth'][data-mode='light'] {
+  --bg: #f3f6ee;
+  --bg-image:
+    radial-gradient(circle at 15% -10%, rgba(155, 200, 120, 0.30), transparent 31rem),
+    radial-gradient(circle at 93% 8%, rgba(245, 183, 91, 0.16), transparent 25rem),
+    linear-gradient(115deg, #f5f8f0 0%, #eef3e6 48%, #f4f7ef 100%);
+
+  --surface: 255 255 255;
+  --surface-alpha: .82;
+  --surface-shadow: 0 12px 30px rgba(52, 70, 45, .09);
+
+  --ink-hi: #1b2418;
+  --ink-mid: #4a5646;
+  --ink-low: #6d7a68;
+  --ink-faint: #929d8d;
+
+  --line-rgb: 44 62 36;
+  --raise-rgb: 34 48 28;
+  --sunken-rgb: 150 160 142;
+
+  --accent: #5f8f36;
+  --accent-rgb: 95 143 54;
+  --accent-strong: #4d7a28;
+  --accent-ink: #ffffff;
+  --accent-shadow: 0 10px 24px rgba(95, 143, 54, .22);
+
+  --field-bg: rgba(255, 255, 255, .75);
+
+  --grid-line: rgba(60, 86, 44, .05);
+
+  --chart-grid: rgba(27, 36, 24, .10);
+  --chart-axis: #4a5646;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: rgba(44, 62, 36, .18);
+  --chart-income: #2f8f5b;
+  --chart-expense: #c2306e;
+  --chart-net: #1b2418;
+
+  --pos-rgb: 21 128 61;
+  --neg-rgb: 190 24 60;
+}
+
+/* ===== Sumi : dark (ink ground) =========================================== */
+[data-theme='sumi'] {
+  --bg: #0b0b0a;
+  --bg-image:
+    radial-gradient(circle at 18% -12%, rgba(200, 16, 46, 0.14), transparent 30rem),
+    linear-gradient(160deg, #0d0d0c 0%, #0a0a09 55%, #060605 100%);
+
+  --surface: 23 23 22;
+  --surface-alpha: .86;
+  --surface-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+
+  --ink-hi: #f6f3ec;
+  --ink-mid: #b3aea4;
+  --ink-low: #86817a;
+  --ink-faint: #5d5a55;
+
+  --line-rgb: 246 243 236;
+  --raise-rgb: 255 255 255;
+  --sunken-rgb: 0 0 0;
+
+  --accent: #d11f34;
+  --accent-rgb: 209 31 52;
+  --accent-strong: #ee2a40;
+  --accent-ink: #fffaf7;
+  --accent-shadow: 0 10px 26px rgba(209, 31, 52, .34);
+
+  --field-bg: rgba(0, 0, 0, .45);
+
+  --radius-md: 1px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 3px;
+  --radius-3xl: 4px;
+
+  --font-display: 'Mister Brush', cursive;
+  --font-ui: 'Shippori Mincho', 'Hiragino Mincho ProN', Georgia, serif;
+  --font-meta: 'DM Mono', ui-monospace, monospace;
+  --display-tracking: .015em;
+  --display-weight: 400;
+  --display-scale: 1.05;
+  --eyebrow-tracking: .34em;
+
+  --grid-line: transparent;
+  /* Ink-ground sumi gets the same fibre, lightened instead of darkened. */
+  --texture: var(--paper-grain);
+  --texture-blend: overlay;
+  --texture-opacity: .24;
+
+  --chart-grid: rgba(246, 243, 236, .09);
+  --chart-axis: #b3aea4;
+  --chart-tooltip-bg: #171716;
+  --chart-tooltip-border: rgba(246, 243, 236, .18);
+  --chart-income: #f6f3ec;
+  --chart-expense: #d11f34;
+  --chart-net: #8a857d;
+
+  --pos-rgb: 214 211 202;
+  --neg-rgb: 232 62 80;
+}
+
+/* ===== Sumi : light (washi paper) ========================================= */
+[data-theme='sumi'][data-mode='light'] {
+  --bg: #fdfdfb;
+  --bg-image:
+    radial-gradient(ellipse 55% 35% at 10% 2%, rgba(104, 100, 92, .10), transparent 72%),
+    radial-gradient(ellipse 50% 40% at 94% 26%, rgba(92, 88, 80, .07), transparent 72%),
+    radial-gradient(ellipse 65% 28% at 50% 105%, rgba(86, 82, 74, .10), transparent 72%),
+    linear-gradient(175deg, #fefefd 0%, #fcfbf8 55%, #f9f8f4 100%);
+
+  --surface: 255 255 254;
+  --surface-alpha: .74;
+  --surface-shadow: 0 10px 26px rgba(40, 34, 26, .10);
+
+  --ink-hi: #14110d;
+  --ink-mid: #45403a;
+  --ink-low: #736c62;
+  --ink-faint: #9c948a;
+
+  --line-rgb: 30 26 20;
+  --raise-rgb: 28 24 18;
+  --sunken-rgb: 158 150 136;
+
+  --accent: #bd1526;
+  --accent-rgb: 189 21 38;
+  --accent-strong: #9d0f1e;
+  --accent-ink: #fffaf7;
+  --accent-shadow: 0 8px 20px rgba(189, 21, 38, .22);
+
+  --field-bg: rgba(255, 253, 248, .72);
+
+  --grid-line: transparent;
+  /* Grit and dirt marks, multiplied into the paper. */
+  --texture: var(--paper-spatter), var(--paper-dirt), var(--paper-wash), var(--paper-grain);
+  --texture-blend: multiply;
+  --texture-opacity: .85;
+
+  --chart-grid: rgba(20, 17, 13, .12);
+  --chart-axis: #45403a;
+  --chart-tooltip-bg: #fdfbf6;
+  --chart-tooltip-border: rgba(30, 26, 20, .20);
+  --chart-income: #14110d;
+  --chart-expense: #bd1526;
+  --chart-net: #8a8177;
+
+  --pos-rgb: 26 26 24;
+  --neg-rgb: 173 18 34;
+}
+
 @layer base {
   body {
-    @apply text-white font-sans antialiased;
-    background: #111513;
-    background-image:
-      radial-gradient(circle at 15% -10%, rgba(155, 200, 120, 0.16), transparent 31rem),
-      radial-gradient(circle at 93% 8%, rgba(245, 183, 91, 0.10), transparent 25rem),
-      linear-gradient(115deg, #111513 0%, #151a17 48%, #101311 100%);
+    @apply antialiased;
+    color: var(--ink-hi);
+    font-family: var(--font-ui);
+    background: var(--bg);
+    background-image: var(--bg-image);
     min-height: 100vh;
   }
 
-  * { scrollbar-color: rgba(178, 207, 143, .28) transparent; }
-  ::selection { background: rgba(178, 207, 143, .28); color: white; }
-  input, select { color-scheme: dark; }
+  /* Paper grit sits above the ground but below everything else. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: var(--texture);
+    background-repeat: repeat;
+    mix-blend-mode: var(--texture-blend);
+    opacity: var(--texture-opacity);
+  }
+
+  #root { position: relative; z-index: 1; }
+
+  * { scrollbar-color: rgb(var(--accent-rgb) / .28) transparent; }
+  ::selection { background: rgb(var(--accent-rgb) / .28); color: var(--ink-hi); }
+  input, select, textarea { color-scheme: light dark; color: var(--ink-hi); }
+  [data-mode='light'] input, [data-mode='light'] select, [data-mode='light'] textarea { color-scheme: light; }
+  :root:not([data-mode='light']) input, :root:not([data-mode='light']) select { color-scheme: dark; }
 }
 
 .glass-card {
   @apply backdrop-blur-lg rounded-2xl p-6;
-  background: rgba(31, 38, 34, .78);
-  border: 1px solid rgba(220, 235, 208, .09);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, .16);
+  background: rgb(var(--surface) / var(--surface-alpha));
+  border: 1px solid rgb(var(--line-rgb) / .09);
+  box-shadow: var(--surface-shadow);
 }
 
 .glass {
-  background: rgba(31, 38, 34, .78);
-  border: 1px solid rgba(220, 235, 208, .09);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, .16);
+  background: rgb(var(--surface) / var(--surface-alpha));
+  border: 1px solid rgb(var(--line-rgb) / .09);
+  box-shadow: var(--surface-shadow);
 }
 
-.kaizen-wordmark { font-family: 'Fraunces', Georgia, serif; letter-spacing: -.045em; }
-.kaizen-serif { font-family: 'Fraunces', Georgia, serif; letter-spacing: -.04em; }
-.kaizen-mono { font-family: 'DM Mono', monospace; }
-.kaizen-orbit {
-  background: conic-gradient(from 210deg, #b6d38c, #e6c072, #b6d38c, #5b7d65, #b6d38c);
-  box-shadow: 0 0 0 5px rgba(181, 210, 137, .08), 0 8px 20px rgba(0, 0, 0, .2);
+.kaizen-wordmark,
+.kaizen-serif {
+  font-family: var(--font-display);
+  letter-spacing: var(--display-tracking);
+  font-weight: var(--display-weight);
+  /* A brush script sits smaller on the body than a serif at the same px. */
+  font-size: calc(1em * var(--display-scale, 1));
 }
+.kaizen-mono { font-family: var(--font-meta); }
+
+/* Eyebrows and small uppercase labels: the third and last role. */
+.kaizen-eyebrow { font-family: var(--font-meta); }
+
+.kaizen-orbit {
+  background: conic-gradient(from 210deg, var(--accent-strong), var(--accent), var(--accent-strong), color-mix(in srgb, var(--accent) 45%, #000), var(--accent-strong));
+  box-shadow: 0 0 0 5px rgb(var(--accent-rgb) / .08), 0 8px 20px rgba(0, 0, 0, .2);
+}
+
 .kaizen-grid {
-  background-image: linear-gradient(rgba(208, 229, 188, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(208, 229, 188, .035) 1px, transparent 1px);
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
@@ -52,18 +325,27 @@
 }
 
 .btn-primary {
-  @apply text-[#172014] font-semibold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-95;
-  background: #b7d58d;
-  box-shadow: 0 10px 24px rgba(145, 178, 103, .18);
+  @apply font-semibold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-95;
+  color: var(--accent-ink);
+  background: var(--accent);
+  box-shadow: var(--accent-shadow);
 }
 
 .btn-secondary {
-  @apply text-white font-semibold py-2 px-6 rounded-xl border transition-all duration-300;
-  background: rgba(255,255,255,.045); border-color: rgba(220,235,208,.1);
+  @apply font-semibold py-2 px-6 rounded-xl border transition-all duration-300;
+  color: var(--ink-hi);
+  background: rgb(var(--raise-rgb) / .045);
+  border-color: rgb(var(--line-rgb) / .1);
 }
 
 .input-field {
   @apply rounded-xl px-4 py-2 focus:outline-none transition-all;
-  background: rgba(9, 13, 11, .42); border: 1px solid rgba(220,235,208,.12);
-  --tw-ring-color: rgba(183,213,141,.42);
+  color: var(--ink-hi);
+  background: var(--field-bg);
+  border: 1px solid rgb(var(--line-rgb) / .12);
+  --tw-ring-color: rgb(var(--accent-rgb) / .42);
 }
+
+/* Sumi leans on brush marks; other families keep their own furniture. */
+.brush-underline { color: var(--accent); }
+.brush-rule { color: rgb(var(--line-rgb) / .38); }

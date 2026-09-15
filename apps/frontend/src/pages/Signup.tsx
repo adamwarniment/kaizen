@@ -29,22 +29,22 @@ const Signup = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 kaizen-grid relative overflow-hidden">
-            <div className="absolute -bottom-32 -right-32 w-[30rem] h-[30rem] rounded-full bg-[#e6c072]/10 blur-3xl" />
+            <div className="absolute -bottom-32 -right-32 w-[30rem] h-[30rem] rounded-full bg-accent/10 blur-3xl" />
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full max-w-md glass-card p-8 md:p-10 relative"
             >
                 <div className="text-center mb-8">
-                    <div className="w-14 h-14 kaizen-orbit rounded-full p-[3px] mx-auto mb-5"><div className="w-full h-full rounded-full bg-[#1c231e] flex items-center justify-center"><Sprout size={24} className="text-[#d2eaaa]" /></div></div>
-                    <p className="text-[10px] uppercase tracking-[.24em] font-semibold text-[#b7d58d] mb-2">Begin your practice</p>
-                    <h1 className="text-5xl kaizen-wordmark text-[#edf3e7]">Build gently.</h1>
-                    <p className="text-slate-400 mt-3">Create a rhythm that makes progress inevitable.</p>
+                    <div className="w-14 h-14 kaizen-orbit rounded-full p-[3px] mx-auto mb-5"><div className="w-full h-full rounded-full bg-surface flex items-center justify-center"><Sprout size={24} className="text-accent-strong" /></div></div>
+                    <p className="text-[10px] kaizen-eyebrow uppercase tracking-[.24em] font-semibold text-accent mb-2">Begin your practice</p>
+                    <h1 className="text-5xl kaizen-wordmark text-ink-hi">Build gently.</h1>
+                    <p className="text-ink-mid mt-3">Create a rhythm that makes progress inevitable.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Full Name</label>
+                        <label className="block text-sm font-medium text-ink-hi mb-2">Full Name</label>
                         <input
                             type="text"
                             value={name}
@@ -55,7 +55,7 @@ const Signup = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                        <label className="block text-sm font-medium text-ink-hi mb-2">Email</label>
                         <input
                             type="email"
                             value={email}
@@ -66,7 +66,7 @@ const Signup = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                        <label className="block text-sm font-medium text-ink-hi mb-2">Password</label>
                         <input
                             type="password"
                             value={password}
@@ -86,8 +86,8 @@ const Signup = () => {
                     </button>
                 </form>
 
-                <div className="mt-8 text-center text-sm text-slate-400">
-                    Already have an account? <Link to="/login" className="text-[#c9e6a1] hover:text-[#e4f5c6]">Sign In</Link>
+                <div className="mt-8 text-center text-sm text-ink-mid">
+                    Already have an account? <Link to="/login" className="text-accent-strong hover:text-accent-strong">Sign In</Link>
                 </div>
             </motion.div>
         </div>
