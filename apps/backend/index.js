@@ -14,6 +14,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'kaizen-secret-key-123';
 app.use(cors());
 app.use(bodyParser.json());
 
+// Never let the password hash leave the server, whatever shape the user object takes.
+const publicUser = (user) => {
+  if (!user) return user;
+  const { password, ...safe } = user;
+  return safe;
+};
+
 // Calendar dates are date-only values. Keep them at UTC midnight so a browser's
 // timezone can never move an entry or its reward to an adjacent calendar day.
 const parseCalendarDate = (value) => {
@@ -24,12 +31,15 @@ const parseCalendarDate = (value) => {
 };
 
 // --- Demo User Middleware/Helper ---
+// The demo identity is a dedicated account, never "whichever user happens to be first":
+// on a self-hosted server that first row is the owner.
+const DEMO_EMAIL = 'demo@kaizen.app';
 const getDemoUser = async () => {
-  let user = await prisma.user.findFirst();
+  let user = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });
   if (!user) {
     user = await prisma.user.create({
       data: {
-        email: 'demo@kaizen.app',
+        email: DEMO_EMAIL,
         name: 'Demo User',
         balance: 0
       }
@@ -39,9 +49,10 @@ const getDemoUser = async () => {
 };
 
 app.get('/auth/demo', async (req, res) => {
+  if (process.env.DEMO_ENABLED === 'false') return res.status(404).json({ error: 'Demo is disabled on this server' });
   const user = await getDemoUser();
   const token = jwt.sign({ userId: user.id }, JWT_SECRET);
-  res.json({ user, token });
+  res.json({ user: publicUser(user), token });
 });
 
 // --- Auth Routes ---
@@ -58,7 +69,7 @@ app.post('/auth/signup', async (req, res) => {
       }
     });
     const token = jwt.sign({ userId: user.id }, JWT_SECRET);
-    res.json({ user, token });
+    res.json({ user: publicUser(user), token });
   } catch (e) {
     res.status(400).json({ error: 'User already exists or invalid data' });
   }
@@ -76,7 +87,7 @@ app.post('/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const token = jwt.sign({ userId: user.id }, JWT_SECRET);
-    res.json({ user, token });
+    res.json({ user: publicUser(user), token });
   } catch (e) {
     res.status(500).json({ error: 'Login failed' });
   }
@@ -108,8 +119,11 @@ const authenticateToken = async (req, res, next) => {
   }
 
   // Fallback to JWT
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
+  jwt.verify(token, JWT_SECRET, async (err, user) => {
+    if (err) return res.sendStatus(401);
+    // A signed token for a user that no longer exists (database reset, account deleted) is not a session.
+    const exists = await prisma.user.findUnique({ where: { id: user.userId }, select: { id: true } });
+    if (!exists) return res.status(401).json({ error: 'Account not found; please sign in again' });
     req.user = user;
     next();
   });
@@ -176,7 +190,7 @@ app.put('/users/me', authenticateToken, async (req, res) => {
       where: { id: userId },
       data
     });
-    res.json(user);
+    res.json(publicUser(user));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Failed to update user' });
@@ -195,15 +209,16 @@ app.get('/users/me', authenticateToken, async (req, res) => {
     where: { id: req.user.userId },
     include: { transactions: true }
   });
-  res.json(user);
+  res.json(publicUser(user));
 });
-app.get('/users/:id', async (req, res) => {
+app.get('/users/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
+  if (id !== req.user.userId) return res.status(403).json({ error: 'Forbidden' });
   const user = await prisma.user.findUnique({
     where: { id },
     include: { measures: true, entries: true, transactions: true }
   });
-  res.json(user);
+  res.json(publicUser(user));
 });
 
 // --- Measure Routes ---
